@@ -1,0 +1,120 @@
+# ── rwcheck — Production Compose (EC2 + Traefik + Let's Encrypt) ──────────────
+#
+# Usage:
+#   cp .env.example .env          # set ACME_EMAIL and tweak RATE_LIMIT
+#   docker compose up -d
+#
+# Traefik obtains a certificate for rwcheck.khanlab.bio automatically via
+# Let's Encrypt HTTP-01 challenge.  Ports 80 and 443 must be reachable from
+# the internet (open them in the EC2 security group).
+
+services:
+
+  # ── Reverse proxy + TLS ────────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      # Disable the Traefik API dashboard in production.
+      - --api.dashboard=false
+
+      # Docker provider — only expose containers with traefik.enable=true.
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+
+      # HTTP entrypoint: redirect all traffic to HTTPS.
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      # HTTPS entrypoint.
+      - --entrypoints.websecure.address=:443
+
+      # Let's Encrypt via HTTP-01 challenge.
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+
+      # Optional: uncomment to use Let's Encrypt staging CA during testing.
+      # - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+
+      # Logging.
+      - --log.level=INFO
+      - --accesslog=true
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      # Traefik reads the Docker socket to discover services.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist ACME certificates across restarts.
+      - letsencrypt:/letsencrypt
+
+  # ── rwcheck FastAPI app ─────────────────────────────────────────────────────
+  rwcheck:
+    # Pull the pre-built image from GHCR, or build locally with:
+    #   docker compose build
+    image: ghcr.io/khan-lab/rwcheck:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    # Override the CLI ENTRYPOINT set in the Dockerfile so the container
+    # runs the API server instead of `rwcheck --help`.
+    entrypoint: ["uvicorn", "rw_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+    # Do not publish port 8000 to the host — Traefik reaches it on the
+    # internal Docker network.
+    expose:
+      - "8000"
+
+    volumes:
+      # Persist the SQLite database across container restarts and upgrades.
+      - rw_data:/app/data
+
+    environment:
+      RW_DB_PATH: /app/data/rw.sqlite
+      RW_CSV_URL: ${RW_CSV_URL:-https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv}
+      RATE_LIMIT: ${RATE_LIMIT:-60/minute}
+      UPDATE_INTERVAL_HOURS: ${UPDATE_INTERVAL_HOURS:-24}
+      PUBLIC_HOST: ${PUBLIC_HOST:-https://rwcheck.khanlab.bio}
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+    labels:
+      - traefik.enable=true
+
+      # Route: rwcheck.khanlab.bio → this service.
+      - traefik.http.routers.rwcheck.rule=Host(`rwcheck.khanlab.bio`)
+      - traefik.http.routers.rwcheck.entrypoints=websecure
+      - traefik.http.routers.rwcheck.tls=true
+      - traefik.http.routers.rwcheck.tls.certresolver=letsencrypt
+
+      # Tell Traefik which port the app listens on.
+      - traefik.http.services.rwcheck.loadbalancer.server.port=8000
+
+      # Security headers middleware.
+      - traefik.http.middlewares.rwcheck-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.rwcheck-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.rwcheck-headers.headers.stsPreload=true
+      - traefik.http.middlewares.rwcheck-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.rwcheck-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.rwcheck-headers.headers.browserXssFilter=true
+      - traefik.http.routers.rwcheck.middlewares=rwcheck-headers
+
+volumes:
+  # Named volume for the Retraction Watch SQLite database.
+  rw_data:
+  # Named volume for Traefik's Let's Encrypt certificate store.
+  letsencrypt:

@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rwcheck"
+version = "1.0.0"
+description = "Check DOIs/PMIDs against the Retraction Watch dataset (SQLite-backed, REST API + CLI)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "rwcheck contributors" }]
+keywords = ["retraction", "doi", "pubmed", "research-integrity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "typer>=0.9",
+    "rich>=13",
+    "httpx>=0.27",
+    "apscheduler>=3.10",
+    "slowapi>=0.1.9",
+    "cachetools>=5.3",
+    "pydantic>=2.6",
+    "pycountry>=23.0",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+]
+
+[project.scripts]
+rwcheck = "rwcheck.cli:app"
+build-rw-db = "scripts.build_db:main"
+
+[project.urls]
+Repository = "https://github.com/your-org/rwcheck"
+Issues = "https://github.com/your-org/rwcheck/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rwcheck", "rw_api", "scripts"]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+# TCH (type-checking import hoist) excluded: adds complexity without benefit in this codebase.
+select = ["E", "F", "I", "UP", "B", "C4", "PIE", "SIM"]
+ignore = ["E501", "SIM117"]  # SIM117: nested-with is fine in fixtures
+
+[tool.ruff.lint.isort]
+known-first-party = ["rwcheck", "rw_api", "scripts"]
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_ignores = true
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

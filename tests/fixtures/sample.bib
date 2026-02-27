@@ -1,0 +1,136 @@
+% rwcheck test fixture — sample BibTeX entries
+%
+% Entry mapping to sample.csv:
+%   smith2020mat  → record 1001  DOI 10.9999/jmat.2020.001234 (RETRACTED)
+%   mueller2019chem → record 1002  DOI 10.8888/chem.2019.056789 (RETRACTED)
+%   roe2021envurl → record 1003  URL-embedded DOI (RETRACTED via url field)
+%   sharma2020pmid → record 1001  PMID 12345678 (RETRACTED via pmid field)
+%   tanaka2022quantum → DOI NOT in sample (clean)
+%   dupont2021micro → DOI NOT in sample (clean)
+%   unknown_book → no DOI, no PMID (unchecked)
+%   rodriguez2023 → eprint+eprinttype=pubmed → record 1002 PMID 87654321 (RETRACTED)
+
+@article{smith2020mat,
+  author  = {Smith, Alice and Jones, Bob},
+  title   = {Fabrication of advanced composite materials},
+  journal = {Journal of Materials},
+  year    = {2020},
+  doi     = {10.9999/jmat.2020.001234},
+}
+
+@article{mueller2019chem,
+  author  = {M{\"u}ller, Eva and Schmidt, Hans},
+  title   = {Novel drug synthesis pathway},
+  journal = {Chemistry Letters},
+  year    = {2019},
+  doi     = {10.8888/chem.2019.056789},
+}
+
+@article{roe2021envurl,
+  author  = {Doe, John and Roe, Jane},
+  title   = {Climate model validation study},
+  journal = {Global Environmental Journal},
+  year    = {2021},
+  url     = {https://doi.org/10.7777/env.2021.climate99},
+}
+
+@article{sharma2020pmid,
+  author  = {Sharma, Priya and Patel, Raj},
+  title   = {AI for medical imaging diagnosis},
+  journal = {IEEE Transactions on Medical Imaging},
+  year    = {2020},
+  doi     = {10.2222/ieeetmi.2020.medical.ai},
+  pmid    = {11223344},
+}
+
+@article{rodriguezeprint,
+  author     = {Rodriguez, Maria},
+  title      = {Novel drug synthesis revisited},
+  journal    = {Chemistry Letters},
+  year       = {2019},
+  eprint     = {87654321},
+  eprinttype = {pubmed},
+}
+
+@article{tanaka2022quantum,
+  author  = {Tanaka, Yuki},
+  title   = {Advances in quantum error correction},
+  journal = {Physical Review Letters},
+  year    = {2022},
+  doi     = {10.0001/prl.2022.clean.quantum},
+}
+
+@article{dupont2021micro,
+  author  = {Dupont, Pierre and Curie, Marie},
+  title   = {Microbiome sequencing methods},
+  journal = {Cell Host and Microbe},
+  year    = {2021},
+  doi     = {10.0002/chm.2021.clean.methods},
+}
+
+@book{unknown_book,
+  author    = {Anonymous},
+  title     = {A Reference Textbook Without a DOI},
+  publisher = {Academic Press},
+  year      = {2015},
+}
+
+@article{Obokata2014STAP,
+  title        = {Stimulus-triggered fate conversion of somatic cells into pluripotency},
+  author       = {Obokata, Haruko and Wakayama, Teruhiko and Sasai, Yoshiki and Kojima, Koji and Vacanti, Martin P. and Niwa, Hitoshi and Yamato, Masayuki and Vacanti, Charles A.},
+  journal      = {Nature},
+  year         = {2014},
+  volume       = {505},
+  number       = {7485},
+  pages        = {641--647},
+  doi          = {10.1038/nature12968},
+  note         = {RETRACTED. Retraction notice in Nature (2014) doi:10.1038/nature13598.},
+}
+
+@article{WolfeSimon2011ArsenicLife,
+  title        = {A bacterium that can grow by using arsenic instead of phosphorus},
+  author       = {Wolfe-Simon, Felisa and Blum, Jodi Switzer and Kulp, Thomas R. and Gordon, George W. and Hoeft, Shelley E. and Pett-Ridge, Jennifer and Stolz, John F. and Webb, Samuel M. and others},
+  journal      = {Science},
+  year         = {2011},
+  volume       = {332},
+  number       = {6034},
+  pages        = {1163--1166},
+  doi          = {10.1126/science.1197258},
+  note         = {RETRACTED. PubMed record marked RETRACTED.},
+}
+
+@article{Mehra2020NEJMCovidCVD,
+  title        = {Cardiovascular Disease, Drug Therapy, and Mortality in Covid-19},
+  author       = {Mehra, Mandeep R. and Desai, Sapan S. and Kuy, SreyRam and Henry, Timothy D. and Patel, Amit N.},
+  journal      = {The New England Journal of Medicine},
+  year         = {2020},
+  volume       = {382},
+  number       = {25},
+  pages        = {e102},
+  doi          = {10.1056/NEJMoa2007621},
+  note         = {RETRACTED. Retraction notice: N Engl J Med (2020) doi:10.1056/NEJMc2021225.},
+}
+
+@article{Wakefield1998LancetMMR,
+  title        = {Ileal-lymphoid-nodular hyperplasia, non-specific colitis, and pervasive developmental disorder in children},
+  author       = {Wakefield, A. J. and Murch, S. H. and Anthony, A. and Linnell, J. and Casson, D. M. and Malik, M. and Berelowitz, M. and Dhillon, A. P. and Thomson, M. A. and Harvey, P. and Valentine, A. and Davies, S. E. and Walker-Smith, J. A.},
+  journal      = {The Lancet},
+  year         = {1998},
+  volume       = {351},
+  number       = {9103},
+  pages        = {637--641},
+  doi          = {10.1016/S0140-6736(97)11096-0},
+  note         = {RETRACTED. Article page labeled RETRACTED by the journal.},
+}
+
+@article{Liang2024CelllncRNACRISPR,
+  title        = {Transcriptome-scale RNA-targeting CRISPR screens reveal essential lncRNAs in human cells},
+  author       = {Liang, Wen-Wei and M{\"u}ller, Simon and Hart, Sydney K. and Wessels, Hans-Hermann and M{\'e}ndez-Mancilla, Alejandro and Sookdeo, Akash and Choi, Olivia and Caragine, Christina M. and Corman, Alba and Lu, Lu and Kolumba, Olena and Williams, Breanna and Sanjana, Neville E.},
+  journal      = {Cell},
+  year         = {2024},
+  volume       = {187},
+  number       = {26},
+  pages        = {7637--7654.e29},
+  doi          = {10.1016/j.cell.2024.10.021},
+  note         = {RETRACTED. PubMed record marked RETRACTED.},
+}
