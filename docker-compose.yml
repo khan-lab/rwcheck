@@ -58,15 +58,18 @@ services:
   rwcheck:
     # Pull the pre-built image from GHCR, or build locally with:
     #   docker compose build
-    image: ghcr.io/khan-lab/rwcheck:latest
+    image: rwcheck:latest
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
 
-    # Override the CLI ENTRYPOINT set in the Dockerfile so the container
-    # runs the API server instead of `rwcheck --help`.
-    entrypoint: ["uvicorn", "rw_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    # Clear the CLI ENTRYPOINT from the Dockerfile and run uvicorn directly.
+    # Setting entrypoint: [] alone is not enough — Docker would still append
+    # the Dockerfile's CMD ["--help"], causing uvicorn to print help and exit,
+    # which triggers an infinite restart loop and repeated DB downloads.
+    entrypoint: []
+    command: ["uvicorn", "rw_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
     # Do not publish port 8000 to the host — Traefik reaches it on the
     # internal Docker network.

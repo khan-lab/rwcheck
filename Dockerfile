@@ -29,7 +29,10 @@ WORKDIR /app
 COPY --from=builder /wheels /wheels
 RUN pip install --no-index --find-links /wheels rwcheck && rm -rf /wheels
 
-# Persist the SQLite database in a volume.
+# Create the data directory explicitly so it exists with correct ownership
+# before Docker mounts the named volume over it.
+RUN mkdir -p /app/data && chmod 755 /app/data
+
 VOLUME ["/app/data"]
 
 # Default environment — override at runtime.
