@@ -12,7 +12,7 @@ import base64
 import html
 import json
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +54,7 @@ class BibResult:
         result: list[dict[str, Any]] = []
         for m in self.doi_matches + self.pmid_matches:
             rid = m.get("record_id")
-            if rid not in seen:
+            if rid is not None and rid not in seen:
                 seen.add(rid)
                 result.append(m)
         return result
@@ -88,7 +88,7 @@ def generate_json_report(
     n_clean = len(results) - n_retracted - n_unchecked
 
     payload: dict[str, Any] = {
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "input_file": input_path.name,
         "meta": meta,
         "summary": {
@@ -158,7 +158,7 @@ def generate_md_report(
         f"**Rows**: {int(meta.get('row_count', 0)):,}  "
         f"**Built**: {meta.get('built_at', 'n/a')}"
     )
-    a(f"**Generated**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}")
+    a(f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     a("")
 
     # ── Summary ───────────────────────────────────────────────────────────────
@@ -399,7 +399,7 @@ def generate_html_report(
     clean = [r for r in results if r.checkable and not r.matched]
     unchecked = [r for r in results if not r.checkable]
 
-    generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     row_count = int(meta.get("row_count", 0))
     title = f"Retraction Watch Report — {_h(input_path.name)}"
 

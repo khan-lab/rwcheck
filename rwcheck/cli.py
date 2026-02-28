@@ -27,7 +27,7 @@ import json
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 import typer
@@ -79,13 +79,13 @@ def _db_conn(db_path: str):
         raise typer.Exit(code=1) from exc
 
 
-def _api_get(api_url: str, path: str) -> dict:
+def _api_get(api_url: str, path: str) -> dict[str, Any]:
     """GET request to the API; exit gracefully on errors."""
     url = f"{api_url.rstrip('/')}/{path.lstrip('/')}"
     try:
         r = httpx.get(url, timeout=15)
         r.raise_for_status()
-        return r.json()
+        return r.json()  # type: ignore[no-any-return]
     except httpx.HTTPStatusError as exc:
         rprint(f"[red]API error {exc.response.status_code}:[/red] {url}")
         raise typer.Exit(code=1) from exc
@@ -94,12 +94,12 @@ def _api_get(api_url: str, path: str) -> dict:
         raise typer.Exit(code=1) from exc
 
 
-def _api_post(api_url: str, path: str, body: dict) -> dict:
+def _api_post(api_url: str, path: str, body: dict[str, Any]) -> dict[str, Any]:
     url = f"{api_url.rstrip('/')}/{path.lstrip('/')}"
     try:
         r = httpx.post(url, json=body, timeout=30)
         r.raise_for_status()
-        return r.json()
+        return r.json()  # type: ignore[no-any-return]
     except httpx.HTTPStatusError as exc:
         rprint(f"[red]API error {exc.response.status_code}:[/red] {url}")
         raise typer.Exit(code=1) from exc
@@ -341,7 +341,7 @@ def batch_pmid(
         raise typer.Exit(1)
 
     raw_ids = _read_ids_from_file(file, col)
-    pmids = [int(x) for x in raw_ids if x.strip().lstrip("-").isdigit()]
+    pmids: list[int | str] = [int(x) for x in raw_ids if x.strip().lstrip("-").isdigit()]
     if out == OutFormat.table:
         console.print(
             f"[dim]Checking {len(pmids)} PMID(s) "
@@ -449,7 +449,7 @@ def batch_bib(
             pmid_lookup[int(r["query"])] = r["matches"]
 
         # Build BibResult list.
-        bib_results: list[BibResult] = []
+        bib_results = []
         for entry in entries:
             doi_matches = doi_lookup.get(entry.doi, []) if entry.doi else []
             pmid_matches = pmid_lookup.get(entry.pmid, []) if entry.pmid else []
@@ -540,7 +540,7 @@ def update(
     build (detected by SHA-256 comparison).  Use --force to rebuild anyway.
     """
     # Import here to keep startup fast and avoid circular issues.
-    from scripts.build_db import build_db  # type: ignore[import]
+    from scripts.build_db import build_db
 
     db_path = _resolve_db(db)
     rprint(f"[bold]rwcheck update[/bold]  target DB → [cyan]{db_path}[/cyan]")

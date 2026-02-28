@@ -50,7 +50,7 @@ def get_connection(db_path: str | Path) -> sqlite3.Connection:
             "Run `rwcheck update` or `python scripts/build_db.py` to build it first."
         )
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
-    conn.row_factory = _dict_factory  # type: ignore[assignment]
+    conn.row_factory = _dict_factory
     # Performance pragmas (safe for read-only use).
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
@@ -76,7 +76,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
     def scalar(sql: str) -> int:
         # row_factory returns dicts; use a named alias 'n' for all scalar queries.
         row = conn.execute(sql).fetchone()
-        return row["n"]  # type: ignore[index]
+        return int(row["n"])
 
     total = scalar("SELECT COUNT(*) AS n FROM retractions")
     journals = scalar(

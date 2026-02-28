@@ -27,7 +27,7 @@ import json
 import re
 import sqlite3
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO
 
@@ -271,7 +271,7 @@ def _ingest(conn: sqlite3.Connection, csv_path: Path, source_url: str, sha256: s
             conn.executemany(_insert_sql, batch)
 
     # Write metadata.
-    now_iso = datetime.now(UTC).isoformat(timespec="seconds")
+    now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     short_version = sha256[:16]
     meta_rows = [
         ("dataset_version", short_version),

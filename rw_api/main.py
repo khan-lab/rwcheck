@@ -139,7 +139,7 @@ def _meta_response() -> MetaResponse:
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────────
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(
@@ -201,7 +201,7 @@ def _require_db() -> None:
 
 
 def _to_summary(row: dict[str, Any]) -> RecordSummary:
-    return RecordSummary(**{k: row.get(k) for k in RecordSummary.model_fields})
+    return RecordSummary.model_validate({k: row.get(k) for k in RecordSummary.model_fields})
 
 
 # ── Logo (embedded as base64 data URI so the page works without static files) ──
@@ -240,7 +240,7 @@ nav {
     gap: 24px; height: 52px; margin-bottom: 32px;
 }
 nav .brand { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -.02em; }
-nav .brand span { color: #2c3e50; }
+nav .brand span { color: #FF5B5B; }
 nav .brand-logo { border-radius: 6px; padding: 2px 8px;
                   display: flex; align-items: center; text-decoration: none; }
 nav .brand-logo img { height: 34px; display: block; }
