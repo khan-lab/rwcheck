@@ -207,10 +207,18 @@ def _to_summary(row: dict[str, Any]) -> RecordSummary:
 # ── Logo (embedded as base64 data URI so the page works without static files) ──
 
 def _load_logo() -> str:
-    logo = Path(__file__).parent.parent / "docs/rwcheck_logo.png"
-    if not logo.exists():
-        return ""
-    return f"data:image/png;base64,{base64.b64encode(logo.read_bytes()).decode()}"
+    # In a dev editable install __file__ is inside the project root, so
+    # parent.parent resolves correctly.  In a wheel install (Docker) __file__
+    # is inside site-packages, so fall back to the CWD which uvicorn inherits
+    # from the Dockerfile WORKDIR (/app) where the logo is explicitly copied.
+    candidates = [
+        Path(__file__).parent.parent / "docs" / "rwcheck_logo.png",
+        Path.cwd() / "docs" / "rwcheck_logo.png",
+    ]
+    for logo in candidates:
+        if logo.exists():
+            return f"data:image/png;base64,{base64.b64encode(logo.read_bytes()).decode()}"
+    return ""
 
 
 _LOGO_DATA_URI = _load_logo()

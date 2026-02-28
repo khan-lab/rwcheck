@@ -25,6 +25,8 @@ WORKDIR /app
 COPY --from=builder /wheels /wheels
 RUN pip install --no-index --find-links /wheels rwcheck && rm -rf /wheels
 
+COPY --from=builder /build/docs/rwcheck_logo.png /app/docs/rwcheck_logo.png
+
 RUN mkdir -p /app/data && chmod 755 /app/data
 
 VOLUME ["/app/data"]
