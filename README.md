@@ -1,5 +1,6 @@
-# RWCheck
-> RWCheck is a CLI and REST API for Fast Retraction Screening of DOIs, PubMed IDs, and BibTeX References
+<img src="docs/rwcheck_logo.png" alt="RWCheck" width="300">
+
+> **RWCheck is a CLI and REST API for Fast Retraction Screening of DOIs, PubMed IDs, and BibTeX References**
 
 **Check DOIs and PubMed IDs. .bib files against the [Retraction Watch](https://retractionwatch.com/) dataset.**
 `rwcheck` ingests the Retraction Watch Data into a local **SQLite** database for O(log n) indexed lookups, exposes a **FastAPI REST API**, and provides a **CLI** for interactive and batch queries — all with no external database services required.
