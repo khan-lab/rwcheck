@@ -1,4 +1,4 @@
-.PHONY: build-db build-db-online api test lint fmt docker-build docker-run compose-up compose-down compose-logs compose-build docs docs-serve clean help
+.PHONY: build-db build-db-online api test lint fmt docker-build docker-build-api docker-run compose-up compose-down compose-logs compose-build docs docs-serve clean help
 
 PYTHON  ?= python3
 DB_PATH ?= data/rw.sqlite
@@ -23,7 +23,7 @@ build-db-force:  ## Force rebuild from local CSV even if unchanged
 # ── API ───────────────────────────────────────────────────────────────────────
 
 api:  ## Start the FastAPI server (development mode with auto-reload)
-	uvicorn rw_api.main:app --reload --host 127.0.0.1 --port 8000
+	uvicorn rw_api.main:app --reload --reload-exclude data --host 127.0.0.1 --port 8000
 
 api-prod:  ## Start the FastAPI server (production mode)
 	uvicorn rw_api.main:app --host 0.0.0.0 --port 8000 --workers 2
@@ -46,14 +46,17 @@ fmt:  ## Auto-format code with ruff
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 
-docker-build:  ## Build the Docker image
-	docker build -t rwcheck:latest .
+docker-build:  ## Build the CLI image (docker/cli/Dockerfile)
+	docker build -f docker/cli/Dockerfile -t rwcheck:latest .
+
+docker-build-api:  ## Build the API image (docker/api/Dockerfile)
+	docker build -f docker/api/Dockerfile -t rwcheck-api:latest .
 
 docker-run:  ## Run the API in Docker (mounts ./data for persistent DB)
 	docker run --rm -p 8000:8000 \
 		-v "$(PWD)/data:/app/data" \
 		-e RW_CSV_URL=$(RW_CSV_URL) \
-		rwcheck:latest
+		rwcheck-api:latest
 
 # ── Docker Compose (production) ───────────────────────────────────────────────
 

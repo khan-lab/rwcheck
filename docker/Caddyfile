@@ -1,0 +1,13 @@
+rwcheck.khanlab.bio {
+    # ACME email for Let's Encrypt notifications (set ACME_EMAIL in .env).
+    tls {env.ACME_EMAIL}
+
+    reverse_proxy rwcheck:8000
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options    nosniff
+        X-Frame-Options           DENY
+        -Server
+    }
+}

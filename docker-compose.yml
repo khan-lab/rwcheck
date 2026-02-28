@@ -1,77 +1,39 @@
-# ── rwcheck — Production Compose (EC2 + Traefik + Let's Encrypt) ──────────────
+# ── rwcheck — Production Compose (EC2 + Caddy + Let's Encrypt) ───────────────
 #
 # Usage:
 #   cp .env.example .env          # set ACME_EMAIL and tweak RATE_LIMIT
 #   docker compose up -d
 #
-# Traefik obtains a certificate for rwcheck.khanlab.bio automatically via
-# Let's Encrypt HTTP-01 challenge.  Ports 80 and 443 must be reachable from
-# the internet (open them in the EC2 security group).
+# Caddy obtains a certificate for rwcheck.khanlab.bio automatically via
+# Let's Encrypt.  Ports 80 and 443 must be reachable from the internet
+# (open them in the EC2 security group).
 
 services:
 
   # ── Reverse proxy + TLS ────────────────────────────────────────────────────
-  traefik:
-    image: traefik:v3.3
+  caddy:
+    image: caddy:2-alpine
     restart: unless-stopped
-    command:
-      # Disable the Traefik API dashboard in production.
-      - --api.dashboard=false
-
-      # Docker provider — only expose containers with traefik.enable=true.
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-
-      # HTTP entrypoint: redirect all traffic to HTTPS.
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
-
-      # HTTPS entrypoint.
-      - --entrypoints.websecure.address=:443
-
-      # Let's Encrypt via HTTP-01 challenge.
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-
-      # Optional: uncomment to use Let's Encrypt staging CA during testing.
-      # - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-
-      # Logging.
-      - --log.level=INFO
-      - --accesslog=true
-
     ports:
       - "80:80"
       - "443:443"
-
+      - "443:443/udp"    # HTTP/3
     volumes:
-      # Traefik reads the Docker socket to discover services.
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Persist ACME certificates across restarts.
-      - letsencrypt:/letsencrypt
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data          # ACME certs and state
+      - caddy_config:/config      # Caddy runtime config
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
 
   # ── rwcheck FastAPI app ─────────────────────────────────────────────────────
   rwcheck:
-    # Pull the pre-built image from GHCR, or build locally with:
-    #   docker compose build
-    image: rwcheck:latest
+    image: rwcheck-api:latest
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/api/Dockerfile
     restart: unless-stopped
 
-    # Clear the CLI ENTRYPOINT from the Dockerfile and run uvicorn directly.
-    # Setting entrypoint: [] alone is not enough — Docker would still append
-    # the Dockerfile's CMD ["--help"], causing uvicorn to print help and exit,
-    # which triggers an infinite restart loop and repeated DB downloads.
-    entrypoint: []
-    command: ["uvicorn", "rw_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-    # Do not publish port 8000 to the host — Traefik reaches it on the
+    # Do not publish port 8000 to the host — Caddy reaches it on the
     # internal Docker network.
     expose:
       - "8000"
@@ -92,32 +54,13 @@ services:
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 5s
-      start_period: 30s
+      # DB download + ingest can take 60-120 s on first boot.
+      start_period: 120s
       retries: 3
-
-    labels:
-      - traefik.enable=true
-
-      # Route: rwcheck.khanlab.bio → this service.
-      - traefik.http.routers.rwcheck.rule=Host(`rwcheck.khanlab.bio`)
-      - traefik.http.routers.rwcheck.entrypoints=websecure
-      - traefik.http.routers.rwcheck.tls=true
-      - traefik.http.routers.rwcheck.tls.certresolver=letsencrypt
-
-      # Tell Traefik which port the app listens on.
-      - traefik.http.services.rwcheck.loadbalancer.server.port=8000
-
-      # Security headers middleware.
-      - traefik.http.middlewares.rwcheck-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.rwcheck-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.rwcheck-headers.headers.stsPreload=true
-      - traefik.http.middlewares.rwcheck-headers.headers.forceSTSHeader=true
-      - traefik.http.middlewares.rwcheck-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.rwcheck-headers.headers.browserXssFilter=true
-      - traefik.http.routers.rwcheck.middlewares=rwcheck-headers
 
 volumes:
   # Named volume for the Retraction Watch SQLite database.
   rw_data:
-  # Named volume for Traefik's Let's Encrypt certificate store.
-  letsencrypt:
+  # Named volumes for Caddy's certificate store and runtime config.
+  caddy_data:
+  caddy_config:

@@ -1,13 +1,13 @@
 # Deploying rwcheck on EC2
 
-This guide walks through hosting `https://rwcheck.khanlab.bio` on an AWS EC2 instance using Docker Compose and Traefik (automatic TLS via Let's Encrypt).
+This guide walks through hosting `https://rwcheck.khanlab.bio` on an AWS EC2 instance using Docker Compose and Caddy (automatic TLS via Let's Encrypt).
 
 ---
 
 ## Prerequisites
 
 - An EC2 instance running **Amazon Linux 2023** or **Ubuntu 22.04+**
-- Instance type: **t3.small** or larger (1 GB RAM minimum)
+- Instance type: **t3.small** or larger (2 GB RAM recommended)
 - A domain you control — `rwcheck.khanlab.bio` — with DNS managed in Route 53 (or any DNS provider)
 - Ports **80** and **443** open in the EC2 security group
 
@@ -34,7 +34,7 @@ Create an **A record** in your DNS provider:
 |---|---|---|
 | `rwcheck.khanlab.bio` | A | `<EC2 public IP>` |
 
-DNS propagation typically takes 1–5 minutes with Route 53, up to an hour with other providers. You can verify with:
+DNS propagation typically takes 1–5 minutes with Route 53, up to an hour with other providers. Verify with:
 
 ```bash
 dig +short rwcheck.khanlab.bio
@@ -48,31 +48,31 @@ dig +short rwcheck.khanlab.bio
 
 SSH into the instance, then install Docker:
 
-**Amazon Linux**
+**Amazon Linux 2023**
 
 ```bash
-    sudo dnf update -y
-    sudo dnf install -y docker
-    sudo systemctl enable --now docker
-    sudo usermod -aG docker $USER
-    newgrp docker
+sudo dnf update -y
+sudo dnf install -y docker
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
-**Ubuntu**
+**Ubuntu 22.04+**
 
 ```bash
-    sudo apt-get update
-    sudo apt-get install -y ca-certificates curl
-    sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-      | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-      https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-      | sudo tee /etc/apt/sources.list.d/docker.list
-    sudo apt-get update
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    sudo usermod -aG docker $USER
-    newgrp docker
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
 Verify:
@@ -107,6 +107,7 @@ ACME_EMAIL=admin@khanlab.bio
 RW_CSV_URL=https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv
 RATE_LIMIT=60/minute
 UPDATE_INTERVAL_HOURS=24
+PUBLIC_HOST=https://rwcheck.khanlab.bio
 ```
 
 `.env` is gitignored and must **never be committed**.
@@ -116,17 +117,17 @@ UPDATE_INTERVAL_HOURS=24
 ## 6. Build and start
 
 ```bash
-# Build the rwcheck Docker image
+# Build the rwcheck API image
 make compose-build
 
-# Start Traefik + rwcheck in the background
+# Start Caddy + rwcheck in the background
 make compose-up
 ```
 
 On first start:
 
-1. Traefik obtains a TLS certificate for `rwcheck.khanlab.bio` via the Let's Encrypt HTTP-01 challenge (~30 seconds).
-2. The rwcheck container downloads the Retraction Watch CSV and builds the SQLite database (~20–60 seconds depending on network).
+1. Caddy obtains a TLS certificate for `rwcheck.khanlab.bio` via Let's Encrypt (~10–30 seconds).
+2. The rwcheck container downloads the Retraction Watch CSV and builds the SQLite database (~60–120 seconds depending on network).
 
 Watch the logs until both services are ready:
 
@@ -138,8 +139,8 @@ make compose-logs
 Look for:
 
 ```
-traefik  | time="..." msg="Configuration loaded from Docker provider"
-rwcheck  | INFO:     Application startup complete.
+caddy   | ... certificate obtained successfully
+rwcheck | INFO:     Application startup complete.
 ```
 
 ---
@@ -189,7 +190,7 @@ make compose-logs
 
 # Single service
 docker compose logs -f rwcheck
-docker compose logs -f traefik
+docker compose logs -f caddy
 ```
 
 ### Pull the latest code and redeploy
@@ -197,14 +198,14 @@ docker compose logs -f traefik
 ```bash
 git pull
 make compose-build
-docker compose up -d --no-deps rwcheck   # rolling restart; keeps Traefik running
+docker compose up -d --no-deps rwcheck   # rolling restart; keeps Caddy running
 ```
 
 ### Force a database rebuild
 
 ```bash
 docker compose exec rwcheck \
-  python -c "from scripts.build_db import build_db; build_db(force=True)"
+  python -c "from scripts.build_db import build_db; build_db(csv_path=None, url=None, force=True)"
 ```
 
 ### Stop the service
@@ -216,14 +217,7 @@ docker compose down -v     # stops containers AND deletes data volumes (destruct
 
 ### TLS certificate renewal
 
-Traefik renews the Let's Encrypt certificate automatically ~30 days before expiry. The certificate is stored in the `letsencrypt` Docker volume and persists across container restarts.
-
-To inspect the certificate:
-
-```bash
-docker compose exec traefik \
-  cat /letsencrypt/acme.json | python3 -m json.tool | grep -A5 '"domain"'
-```
+Caddy renews Let's Encrypt certificates automatically before expiry. Certificates are stored in the `caddy_data` Docker volume and persist across restarts. No manual intervention is required.
 
 ---
 
@@ -233,8 +227,22 @@ docker compose exec traefik \
 
 - Confirm DNS resolves to the EC2 IP: `dig +short rwcheck.khanlab.bio`
 - Confirm ports 80 and 443 are open: `curl -I http://rwcheck.khanlab.bio`
-- Check Traefik logs: `docker compose logs traefik`
-- Test with Let's Encrypt staging CA first (avoids rate limits): uncomment the `caserver` line in `docker-compose.yml`, run `compose-down` then `compose-up`.
+- Check Caddy logs: `docker compose logs caddy`
+- Confirm `ACME_EMAIL` is set in `.env`
+
+To use Let's Encrypt staging CA during testing (avoids rate limits), edit `docker/Caddyfile`:
+
+```
+rwcheck.khanlab.bio {
+    tls {env.ACME_EMAIL} {
+        ca https://acme-staging-v02.api.letsencrypt.org/directory
+    }
+    reverse_proxy rwcheck:8000
+    ...
+}
+```
+
+Then reload: `docker compose restart caddy`
 
 ### Database not built
 
@@ -260,7 +268,7 @@ Stop the conflicting service before running `compose-up`.
 
 ### Out of disk space
 
-The Retraction Watch CSV is ~50 MB; the SQLite database is ~150 MB. Check disk usage:
+The Retraction Watch CSV is ~60 MB; the SQLite database is ~150 MB. Check disk usage:
 
 ```bash
 df -h
