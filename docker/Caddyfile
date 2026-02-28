@@ -1,7 +1,10 @@
-rwcheck.khanlab.bio {
-    # ACME email for Let's Encrypt notifications (set ACME_EMAIL in .env).
-    tls {env.ACME_EMAIL}
+# Global options — ACME email for Let's Encrypt notifications.
+# Set ACME_EMAIL in .env; Caddy reads it via the environment substitution below.
+{
+    email {env.ACME_EMAIL}
+}
 
+rwcheck.khanlab.bio {
     reverse_proxy rwcheck:8000
 
     header {
