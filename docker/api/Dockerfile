@@ -9,6 +9,7 @@ COPY pyproject.toml README.md ./
 COPY rwcheck/ rwcheck/
 COPY rw_api/ rw_api/
 COPY scripts/ scripts/
+COPY docs/ docs/
 
 RUN pip wheel --wheel-dir /wheels .
 

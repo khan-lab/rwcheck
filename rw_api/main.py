@@ -168,9 +168,9 @@ async def lifespan(app: FastAPI):  # type: ignore[type-arg]
 limiter = Limiter(key_func=get_remote_address, default_limits=[_RATE_LIMIT])
 
 app = FastAPI(
-    title="rwcheck API",
+    title="RWCheck REST API",
     description=(
-        "Query the Retraction Watch dataset by DOI or PubMed ID. "
+        "Query the Retraction Watch dataset by DOI, PubMed ID or BibTeX file. "
         "The local SQLite database is rebuilt automatically every day."
     ),
     version="1.0.0",
@@ -235,17 +235,17 @@ a:hover { text-decoration: underline; }
 
 /* ── Top nav ── */
 nav {
-    background: #2c3e50; color: #ecf0f1;
+    background: #BFC9D1; color: #ecf0f1;
     padding: 0 24px; display: flex; align-items: center;
     gap: 24px; height: 52px; margin-bottom: 32px;
 }
 nav .brand { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -.02em; }
-nav .brand span { color: #e74c3c; }
-nav .brand-logo { background: #fff; border-radius: 6px; padding: 2px 8px;
+nav .brand span { color: #2c3e50; }
+nav .brand-logo { border-radius: 6px; padding: 2px 8px;
                   display: flex; align-items: center; text-decoration: none; }
 nav .brand-logo img { height: 34px; display: block; }
 nav .spacer { flex: 1; }
-nav a { color: #bdc3c7; font-size: 0.88rem; }
+nav a { color: #1a252f; font-size: 0.88rem; }
 nav a:hover { color: #fff; text-decoration: none; }
 
 /* ── Hero ── */
@@ -505,11 +505,12 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     # ── Nav ───────────────────────────────────────────────────────────────────
     w("<nav>")
     if _LOGO_DATA_URI:
-        w(f'<a class="brand-logo" href="/"><img src="{_LOGO_DATA_URI}" alt="rwcheck"></a>')
+        w(f'<a class="brand-logo" href="/"><img src="{_LOGO_DATA_URI}" alt="RWCheck"></a>')
     else:
-        w('<span class="brand">rw<span>check</span></span>')
+        w('<span class="brand">RW<span>Check</span></span>')
     w('<span class="spacer"></span>')
-    w('<a href="/docs">API Docs</a>')
+    w('<a href="/docs" target="_blank" rel="noopener">API Docs</a>')
+    w('<a href="https://khan-lab.github.io/rwcheck" target="_blank" rel="noopener">CLI Docs</a>')
     w('<a href="/stats">Stats JSON</a>')
     w('<a href="/health">Health</a>')
     w('<a href="https://github.com/khan-lab/rwcheck" target="_blank" rel="noopener">GitHub</a>')

@@ -41,7 +41,7 @@ from rwcheck.normalize import normalize_doi, normalize_pmid
 
 app = typer.Typer(
     name="rwcheck",
-    help="Check DOIs/PMIDs against the Retraction Watch dataset.",
+    help="Check DOIs/PMIDs/BibTeX references against the updated Retraction Watch dataset.",
     add_completion=False,
     rich_markup_mode="rich",
 )

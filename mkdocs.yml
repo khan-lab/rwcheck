@@ -1,8 +1,8 @@
 site_name: RWCheck
 site_description: Fast Retraction Watch lookup — REST API, CLI, and Python library
 site_url: https://khan-lab.github.io/rwcheck/
-repo_url: https://github.com/your-org/rwcheck
-repo_name: your-org/rwcheck
+repo_url: https://github.com/khan-lab/rwcheck
+repo_name: khan-lab/rwcheck
 
 theme:
   name: material
