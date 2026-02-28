@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main"]
     tags: ["v*"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main"]
 
 # Cancel in-progress runs for the same ref.
 concurrency:
@@ -14,7 +14,6 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}   # e.g. khan-lab/rwcheck
 
 jobs:
 
@@ -49,14 +48,33 @@ jobs:
         run: pytest -v --tb=short
 
   # ── Docker build + GHCR push ─────────────────────────────────────────────────
+  #
+  # Matrix builds two images in parallel:
+  #   ghcr.io/<owner>/rwcheck      — CLI  (docker/cli/Dockerfile)
+  #   ghcr.io/<owner>/rwcheck-api  — API  (docker/api/Dockerfile)
+  #
   docker:
-    name: Docker — build & push to GHCR
+    name: Docker — ${{ matrix.image_name }}
     runs-on: ubuntu-latest
     needs: test
 
     permissions:
       contents: read
       packages: write   # required to push to ghcr.io
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image_name: rwcheck
+            dockerfile: docker/cli/Dockerfile
+            # Smoke test: run the CLI --help via its ENTRYPOINT
+            smoke_args: "rwcheck --help"
+
+          - image_name: rwcheck-api
+            dockerfile: docker/api/Dockerfile
+            # Smoke test: verify all packages import cleanly (no DB needed)
+            smoke_args: "python -c \"import rw_api.main; print('import OK')\""
 
     steps:
       - uses: actions/checkout@v4
@@ -66,19 +84,19 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Generate image tags:
-      #   push to main → ghcr.io/khan-lab/rwcheck:latest + :sha-<short>
+      #   push to main  → :latest + :sha-<short>
       #   push tag v1.2.3 → :1.2.3, :1.2, :1, :latest
-      #   pull request → :pr-<number>  (built but NOT pushed)
+      #   pull request  → :pr-<number>  (built but NOT pushed)
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image_name }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -89,22 +107,24 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       # Enable BuildKit layer caching via GHA cache.
+      # Each matrix leg uses its own cache scope to avoid collisions.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push — ${{ matrix.image_name }}
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
 
-      # Smoke-test: run rwcheck --help inside the freshly built image.
-      - name: Smoke test — rwcheck --help
+      # Quick sanity check using the freshly built (local) image.
+      - name: Smoke test — ${{ matrix.image_name }}
         run: |
-          docker run --rm \
+          docker run --rm --entrypoint "" \
             $(echo "${{ steps.meta.outputs.tags }}" | head -1) \
-            --help
+            ${{ matrix.smoke_args }}
