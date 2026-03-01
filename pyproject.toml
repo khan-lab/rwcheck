@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rwcheck"
-version = "1.0.0"
+version = "1.0.1"
 description = "RWCheck: A command-line interface for fast Retraction Watch checks"
 readme = "README.md"
 license = { text = "MIT" }
