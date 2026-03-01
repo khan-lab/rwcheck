@@ -609,7 +609,7 @@
 
 <h1 id="rwcheck">RWCheck<a class="headerlink" href="#rwcheck" title="Permanent link">&para;</a></h1>
 <p><strong>Fast Retraction Watch lookup — REST API, CLI, and Python library.</strong></p>
-<p>RWCheck lets you check DOIs and PubMed IDs against the <a href="https://retractionwatch.com/">Retraction Watch</a> dataset in milliseconds. It ships as:</p>
+<p>RWCheck lets you check DOIs, PubMed IDs, and titles against the <a href="https://retractionwatch.com/">Retraction Watch</a> dataset in milliseconds. It ships as:</p>
 <ul>
 <li>A <strong>command-line tool</strong> (<code>rwcheck</code>) for interactive use and scripting</li>
 <li>A <strong>Python library</strong> (<code>import rwcheck</code>) for programmatic access</li>
@@ -628,6 +628,9 @@
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Check a PubMed ID</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>rwcheck<span class="w"> </span>pmid<span class="w"> </span><span class="m">12345678</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Check by exact title (case-insensitive)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>rwcheck<span class="w"> </span>title<span class="w"> </span><span class="s2">&quot;Exact paper title here&quot;</span>
 </span></code></pre></div>
 <hr />
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
@@ -646,6 +649,10 @@
 <tr>
 <td><strong>PMID lookup</strong></td>
 <td>Integer or string input</td>
+</tr>
+<tr>
+<td><strong>Title lookup</strong></td>
+<td>Exact case-insensitive title match; warns to verify with DOI/PMID</td>
 </tr>
 <tr>
 <td><strong>Batch DOI/PMID</strong></td>

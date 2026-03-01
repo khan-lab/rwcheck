@@ -517,6 +517,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rwcheck-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rwcheck title
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rwcheck-batch-doi" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -643,10 +654,10 @@
 
 
 <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
-<p>The <code>rwcheck</code> command-line tool checks DOIs and PubMed IDs against the local Retraction Watch database.</p>
+<p>The <code>rwcheck</code> command-line tool checks DOIs, PubMed IDs, and paper titles against the local Retraction Watch database.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Usage: rwcheck [OPTIONS] COMMAND [ARGS]...
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  Check DOIs/PMIDs against the Retraction Watch dataset.
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  Check DOIs, PMIDs, and titles against the Retraction Watch dataset.
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Options:
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  --version   Show version and exit.
@@ -655,10 +666,11 @@
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Commands:
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  doi         Check a single DOI.
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  pmid        Check a single PubMed ID.
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  batch-doi   Batch-check DOIs from a text or CSV file.
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  batch-pmid  Batch-check PMIDs from a text or CSV file.
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  batch-bib   Check all references in a BibTeX file.
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  update      Download the latest dataset and rebuild the local DB.
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  title       Check by exact title (case-insensitive).
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  batch-doi   Batch-check DOIs from a text or CSV file.
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  batch-pmid  Batch-check PMIDs from a text or CSV file.
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  batch-bib   Check all references in a BibTeX file.
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  update      Download the latest dataset and rebuild the local DB.
 </span></code></pre></div>
 <hr />
 <h2 id="global-options">Global options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h2>
@@ -793,9 +805,68 @@
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>rwcheck<span class="w"> </span>pmid<span class="w"> </span><span class="m">12345678</span><span class="w"> </span>--api<span class="w"> </span>http://localhost:8000
 </span></code></pre></div>
 <hr />
+<h2 id="rwcheck-title"><code>rwcheck title</code><a class="headerlink" href="#rwcheck-title" title="Permanent link">&para;</a></h2>
+<p>Check whether a paper title appears in Retraction Watch (exact, case-insensitive match).</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>rwcheck<span class="w"> </span>title<span class="w"> </span>TITLE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</span></code></pre></div>
+<p><strong>Arguments</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TITLE</code></td>
+<td>Exact paper title to search. Enclose in quotes if it contains spaces.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Options</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>Output raw JSON instead of the formatted table</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> Title matching is exact and case-insensitive. When a match is found a
+warning is displayed reminding you to confirm the result with a DOI or PMID.</p>
+</blockquote>
+<p><strong>Examples</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>rwcheck<span class="w"> </span>title<span class="w"> </span><span class="s2">&quot;Moderation of gut microbiota is associated with...&quot;</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>rwcheck<span class="w"> </span>title<span class="w"> </span><span class="s2">&quot;Example Paper Title&quot;</span><span class="w"> </span>--json
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>rwcheck<span class="w"> </span>title<span class="w"> </span><span class="s2">&quot;Example Paper Title&quot;</span><span class="w"> </span>--api<span class="w"> </span>https://rwcheck.khanlab.bio
+</span></code></pre></div>
+<p><strong>Output (table mode)</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>NOT FOUND  query=&quot;Example Paper Title&quot;  (no retraction records)
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Dataset: abc123... | rows=45231 | built=2024-06-01T12:00:00
+</span></code></pre></div>
+<p>If the title matches:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>RETRACTED  query=&quot;Example Paper Title&quot;  (1 record(s))
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  ⚠ Title match — verify with DOI or PMID.
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  Record ID         12345
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  Title             Example Paper Title
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  Journal           Cell
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  Nature            Retraction
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>  Reason            Data Fabrication
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  Retraction Date   2010-01-15
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>  Original DOI      10.1016/j.cell.2009.10.015
+</span></code></pre></div>
+<hr />
 <h2 id="rwcheck-batch-doi"><code>rwcheck batch-doi</code><a class="headerlink" href="#rwcheck-batch-doi" title="Permanent link">&para;</a></h2>
 <p>Batch-check DOIs from a plain-text file (one per line) or a CSV/TSV file.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--out<span class="w"> </span>FORMAT<span class="o">]</span><span class="w"> </span><span class="o">[</span>--col<span class="w"> </span>COLUMN<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--out<span class="w"> </span>FORMAT<span class="o">]</span><span class="w"> </span><span class="o">[</span>--col<span class="w"> </span>COLUMN<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Arguments</strong></p>
 <table>
@@ -841,33 +912,33 @@
 </table>
 <p><strong>Input formats</strong></p>
 <p>Plain text (one DOI per line, <code>#</code> comments ignored):</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a># My references
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>10.1038/nature12345
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>10.1016/j.cell.2009.10.015
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>https://doi.org/10.1007/s00248-019-01449-w
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a># My references
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>10.1038/nature12345
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>10.1016/j.cell.2009.10.015
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>https://doi.org/10.1007/s00248-019-01449-w
 </span></code></pre></div>
 <p>CSV with a <code>doi</code> column:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>doi,title
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>10.1038/nature12345,Paper 1
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>10.1016/j.cell.2009.10.015,Paper 2
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>doi,title
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>10.1038/nature12345,Paper 1
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>10.1016/j.cell.2009.10.015,Paper 2
 </span></code></pre></div>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>papers.csv<span class="w"> </span>--col<span class="w"> </span>doi
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>papers.csv<span class="w"> </span>--col<span class="w"> </span>doi
 </span></code></pre></div>
 <p><strong>Output formats</strong></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Table</label><label for="__tabbed_1_2">JSON</label><label for="__tabbed_1_3">TSV</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt
 </span></code></pre></div>
 Coloured summary printed to stdout + three report files written.</p>
 </div>
 <div class="tabbed-block">
-<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt<span class="w"> </span>--out<span class="w"> </span>json
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt<span class="w"> </span>--out<span class="w"> </span>json
 </span></code></pre></div>
 Full JSON to stdout (no report files printed to stdout).</p>
 </div>
 <div class="tabbed-block">
-<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt<span class="w"> </span>--out<span class="w"> </span>tsv<span class="w"> </span>&gt;<span class="w"> </span>results.tsv
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>rwcheck<span class="w"> </span>batch-doi<span class="w"> </span>dois.txt<span class="w"> </span>--out<span class="w"> </span>tsv<span class="w"> </span>&gt;<span class="w"> </span>results.tsv
 </span></code></pre></div>
 One row per match; header row included.</p>
 </div>
@@ -900,23 +971,23 @@ One row per match; header row included.</p>
 <hr />
 <h2 id="rwcheck-batch-pmid"><code>rwcheck batch-pmid</code><a class="headerlink" href="#rwcheck-batch-pmid" title="Permanent link">&para;</a></h2>
 <p>Batch-check PMIDs from a plain-text file or CSV/TSV. Same interface as <code>batch-doi</code>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--out<span class="w"> </span>FORMAT<span class="o">]</span><span class="w"> </span><span class="o">[</span>--col<span class="w"> </span>COLUMN<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--out<span class="w"> </span>FORMAT<span class="o">]</span><span class="w"> </span><span class="o">[</span>--col<span class="w"> </span>COLUMN<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
 </span></code></pre></div>
 <p>Non-integer lines are silently skipped. A count of skipped entries is shown in table mode.</p>
 <p><strong>Examples</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Plain text file</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>pmids.txt
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># CSV with explicit column</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>refs.csv<span class="w"> </span>--col<span class="w"> </span>pubmed_id<span class="w"> </span>--out<span class="w"> </span>tsv<span class="w"> </span>&gt;<span class="w"> </span>results.tsv
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># Write reports to a specific directory</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>pmids.txt<span class="w"> </span>--report-dir<span class="w"> </span>./reports/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Plain text file</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>pmids.txt
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># CSV with explicit column</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>refs.csv<span class="w"> </span>--col<span class="w"> </span>pubmed_id<span class="w"> </span>--out<span class="w"> </span>tsv<span class="w"> </span>&gt;<span class="w"> </span>results.tsv
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="c1"># Write reports to a specific directory</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>rwcheck<span class="w"> </span>batch-pmid<span class="w"> </span>pmids.txt<span class="w"> </span>--report-dir<span class="w"> </span>./reports/
 </span></code></pre></div>
 <hr />
 <h2 id="rwcheck-batch-bib"><code>rwcheck batch-bib</code><a class="headerlink" href="#rwcheck-batch-bib" title="Permanent link">&para;</a></h2>
 <p>Parse a BibTeX file and check every reference against Retraction Watch.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--api<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--report-dir<span class="w"> </span>DIR<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Arguments</strong></p>
 <table>
@@ -960,28 +1031,28 @@ One row per match; header row included.</p>
 </ul>
 <p><strong>Output</strong></p>
 <p>A summary table is printed, then retracted entries are listed, then report paths:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>  Total references         42
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  Retracted                 2
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  Clean (not found)        38
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  Unchecked (no DOI/PMID)   2
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>⚠ Retracted entries:
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  ✗ [smith2010] Smith et al. 2010 — Retraction | Cell
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>Reports written:
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  Markdown → refs_rwcheck.md
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  HTML     → refs_rwcheck.html
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  JSON     → refs_rwcheck.json
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>  Total references         42
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>  Retracted                 2
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>  Clean (not found)        38
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>  Unchecked (no DOI/PMID)   2
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>⚠ Retracted entries:
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>  ✗ [smith2010] Smith et al. 2010 — Retraction | Cell
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>Reports written:
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>  Markdown → refs_rwcheck.md
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>  HTML     → refs_rwcheck.html
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>  JSON     → refs_rwcheck.json
 </span></code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib<span class="w"> </span>--report-dir<span class="w"> </span>./output/
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib<span class="w"> </span>--api<span class="w"> </span>http://localhost:8000
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib<span class="w"> </span>--report-dir<span class="w"> </span>./output/
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>rwcheck<span class="w"> </span>batch-bib<span class="w"> </span>refs.bib<span class="w"> </span>--api<span class="w"> </span>http://localhost:8000
 </span></code></pre></div>
 <hr />
 <h2 id="rwcheck-update"><code>rwcheck update</code><a class="headerlink" href="#rwcheck-update" title="Permanent link">&para;</a></h2>
 <p>Download the latest Retraction Watch CSV and rebuild the local database.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>rwcheck<span class="w"> </span>update<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--url<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--force<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>rwcheck<span class="w"> </span>update<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--url<span class="w"> </span>URL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--force<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong></p>
 <table>
@@ -1012,14 +1083,14 @@ One row per match; header row included.</p>
 </table>
 <p>The update is <strong>skipped</strong> if the remote CSV SHA-256 matches the last build. Use <code>--force</code> to rebuild unconditionally.</p>
 <p><strong>Examples</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Normal update (skips if unchanged)</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>rwcheck<span class="w"> </span>update
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># Force rebuild</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>rwcheck<span class="w"> </span>update<span class="w"> </span>--force
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Custom DB path and URL</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>rwcheck<span class="w"> </span>update<span class="w"> </span>--db<span class="w"> </span>/opt/rw/rw.sqlite<span class="w"> </span>--url<span class="w"> </span>https://example.com/custom.csv
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Normal update (skips if unchanged)</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>rwcheck<span class="w"> </span>update
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># Force rebuild</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>rwcheck<span class="w"> </span>update<span class="w"> </span>--force
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c1"># Custom DB path and URL</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>rwcheck<span class="w"> </span>update<span class="w"> </span>--db<span class="w"> </span>/opt/rw/rw.sqlite<span class="w"> </span>--url<span class="w"> </span>https://example.com/custom.csv
 </span></code></pre></div>
 
 
