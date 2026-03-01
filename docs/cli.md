@@ -1,11 +1,11 @@
 # CLI Reference
 
-The `rwcheck` command-line tool checks DOIs and PubMed IDs against the local Retraction Watch database.
+The `rwcheck` command-line tool checks DOIs, PubMed IDs, and paper titles against the local Retraction Watch database.
 
 ```
 Usage: rwcheck [OPTIONS] COMMAND [ARGS]...
 
-  Check DOIs/PMIDs against the Retraction Watch dataset.
+  Check DOIs, PMIDs, and titles against the Retraction Watch dataset.
 
 Options:
   --version   Show version and exit.
@@ -14,6 +14,7 @@ Options:
 Commands:
   doi         Check a single DOI.
   pmid        Check a single PubMed ID.
+  title       Check by exact title (case-insensitive).
   batch-doi   Batch-check DOIs from a text or CSV file.
   batch-pmid  Batch-check PMIDs from a text or CSV file.
   batch-bib   Check all references in a BibTeX file.
@@ -121,6 +122,60 @@ Same as `rwcheck doi`.
 rwcheck pmid 12345678
 rwcheck pmid 12345678 --json
 rwcheck pmid 12345678 --api http://localhost:8000
+```
+
+---
+
+## `rwcheck title`
+
+Check whether a paper title appears in Retraction Watch (exact, case-insensitive match).
+
+```bash
+rwcheck title TITLE [--db PATH] [--api URL] [--json]
+```
+
+**Arguments**
+
+| Argument | Description |
+|---|---|
+| `TITLE` | Exact paper title to search. Enclose in quotes if it contains spaces. |
+
+**Options**
+
+| Option | Description |
+|---|---|
+| `--json` | Output raw JSON instead of the formatted table |
+
+> **Note:** Title matching is exact and case-insensitive. When a match is found a
+> warning is displayed reminding you to confirm the result with a DOI or PMID.
+
+**Examples**
+
+```bash
+rwcheck title "Moderation of gut microbiota is associated with..."
+rwcheck title "Example Paper Title" --json
+rwcheck title "Example Paper Title" --api https://rwcheck.khanlab.bio
+```
+
+**Output (table mode)**
+
+```
+NOT FOUND  query="Example Paper Title"  (no retraction records)
+Dataset: abc123... | rows=45231 | built=2024-06-01T12:00:00
+```
+
+If the title matches:
+
+```
+RETRACTED  query="Example Paper Title"  (1 record(s))
+  ⚠ Title match — verify with DOI or PMID.
+  Record ID         12345
+  Title             Example Paper Title
+  Journal           Cell
+  Nature            Retraction
+  Reason            Data Fabrication
+  Retraction Date   2010-01-15
+  Original DOI      10.1016/j.cell.2009.10.015
 ```
 
 ---

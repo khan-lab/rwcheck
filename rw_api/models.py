@@ -118,6 +118,7 @@ class StatsResponse(BaseModel):
     total_records: int = Field(..., description="Total number of Retraction Watch records.")
     total_journals: int = Field(..., description="Number of distinct journals.")
     total_countries: int = Field(..., description="Number of distinct countries.")
+    total_authors: int = Field(..., description="Number of distinct authors.")
     doi_coverage: int = Field(..., description="Records with an original paper DOI.")
     pmid_coverage: int = Field(..., description="Records with an original paper PMID.")
     by_year: list[list] = Field(..., description="[[year_str, count], ...] sorted ascending.")

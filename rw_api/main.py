@@ -504,7 +504,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     w("<head>")
     w('<meta charset="UTF-8">')
     w('<meta name="viewport" content="width=device-width, initial-scale=1">')
-    w("<title>RWCheck — Fast Retraction Watch lookup API and CLI</title>")
+    w("<title>RWCheck: Retraction Watch Checks at Scale – REST API and CLI</title>")
     w(f"<style>{_LANDING_CSS}</style>")
     if db_ok:
         w(
@@ -525,11 +525,11 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     else:
         w('<span class="brand">RW<span>Check</span></span>')
     w('<span class="spacer"></span>')
-    w('<a href="/docs" target="_blank" rel="noopener">REST API</a>')
-    w('<a href="https://khan-lab.github.io/rwcheck" target="_blank" rel="noopener">CLI</a>')
+    w('<a href="/docs" target="_blank" rel="noopener"><b>REST API</b></a>')
+    w('<a href="https://khan-lab.github.io/rwcheck" target="_blank" rel="noopener"><b>CLI</b></a>')
     #w('<a href="/stats">Stats JSON</a>')
-    w('<a href="/health">Health</a>')
-    w('<a href="https://github.com/khan-lab/rwcheck" target="_blank" rel="noopener">GitHub</a>')
+    #w('<a href="/health">Health</a>')
+    w('<a href="https://github.com/khan-lab/rwcheck" target="_blank" rel="noopener"><b>Source Code</b></a>')
     w("</nav>")
 
     w('<div class="page">')
@@ -537,7 +537,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     # ── Hero ──────────────────────────────────────────────────────────────────
     w('<section class="hero">')
     #w("<h1>Prevent retracted papers from propagating into your citations</h1>")
-    w("<h1>Retraction Watch Checks at Scale – Web • REST API • CLI</h1>")
+    w("<h1>Retraction Watch Checks at Scale – REST API • CLI • Web</h1>")
     w("<h4><i><b>RWCheck</b> provides fast screening of DOIs, PubMed IDs, and BibTeX files against a versioned Retraction Watch snapshot.</i></h4>")
     w(
         "<p>Use the <b>web app</b> for quick checks, the <b>CLI</b> to scan manuscripts and " \
@@ -591,6 +591,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
         total = stats.get("total_records", 0)
         journals = stats.get("total_journals", 0)
         countries = stats.get("total_countries", 0)
+        authors = stats.get("total_authors", 0)
         doi_cov = stats.get("doi_coverage", 0)
         doi_pct = f"{doi_cov / total * 100:.0f}%" if total else "—"
 
@@ -599,6 +600,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
             ("c-total", f"{total:,}", "Total Records"),
             ("c-jrnl",  f"{journals:,}", "Journals"),
             ("c-cntry", f"{countries:,}", "Countries"),
+            ("c-auth",  f"{authors:,}", "Authors"),
             ("c-doi",   doi_pct, "DOI Coverage"),
         ]:
             w(f'<div class="card {cls}"><div class="num">{num}</div>'
@@ -767,7 +769,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
         "https://gitlab.com/crossref/retraction-watch-data"
     )
     _cite_tool = (
-        "RWCheck: Fast retractions screening REST API and CLI[Software].\n"
+        "RWCheck: Retraction Watch Checks at Scale using REST API and CLI.\n"
         "https://github.com/khan-lab/rwcheck"
     )
 
@@ -1023,7 +1025,7 @@ def landing() -> HTMLResponse:
     summary="Dataset statistics",
 )
 def stats_endpoint() -> StatsResponse:
-    """Return aggregate statistics: total records, distinct journals/countries,
+    """Return aggregate statistics: total records, distinct journals/countries/authors,
     DOI/PMID coverage, retractions per year, and top-10 journals by count.
     Results are cached and cleared on each daily database rebuild.
     """

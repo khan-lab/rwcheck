@@ -192,7 +192,7 @@ def test_stats_endpoint_structure(client: TestClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     for key in (
-        "total_records", "total_journals", "total_countries",
+        "total_records", "total_journals", "total_countries", "total_authors",
         "doi_coverage", "pmid_coverage", "by_year", "top_journals",
         "by_country", "meta",
     ):

@@ -97,6 +97,20 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
                 country_counts[c] = country_counts.get(c, 0) + row["n"]
     countries = len(country_counts)
     by_country = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+
+    # The 'author' column stores semicolon-separated names (e.g. "Smith, J;Jones, A").
+    author_agg_rows = conn.execute(
+        "SELECT author, COUNT(*) AS n FROM retractions "
+        "WHERE author IS NOT NULL GROUP BY author"
+    ).fetchall()
+    author_counts: dict[str, int] = {}
+    for row in author_agg_rows:
+        for part in row["author"].split(";"):
+            a = part.strip()
+            if a:
+                author_counts[a] = author_counts.get(a, 0) + row["n"]
+    authors = len(author_counts)
+
     doi_cov = scalar(
         "SELECT COUNT(*) AS n FROM retractions WHERE original_paper_doi IS NOT NULL"
     )
@@ -121,6 +135,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
         "total_records": total,
         "total_journals": journals,
         "total_countries": countries,
+        "total_authors": authors,
         "doi_coverage": doi_cov,
         "pmid_coverage": pmid_cov,
         "by_year": [[r["yr"], r["n"]] for r in by_year_rows],

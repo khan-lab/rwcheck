@@ -20,7 +20,7 @@ This installs the `rwcheck` CLI, the Python library, and all runtime dependencie
 ## Install from source
 
 ```bash
-git clone https://github.com/your-org/rwcheck.git
+git clone https://github.com/khan-lab/rwcheck.git
 cd rwcheck
 pip install -e ".[dev]"
 ```

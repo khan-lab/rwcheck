@@ -12,7 +12,7 @@ Check DOIs, PubMed IDs, and `.bib` files against the [Retraction Watch](https://
 ## Features
 
 - **REST API** — OpenAPI docs, rate limiting, 5-min cache, daily auto-update.
-- **CLI** — single DOI/PMID lookup, batch from file, BibTeX screening.
+- **CLI** — single DOI/PMID/title lookup, batch from file, BibTeX screening.
 - **SQLite-backed** — fast indexed lookup; no Postgres or Redis required.
 - **Python API** — import and call directly; no server needed.
 - **Auto-updates** — API rebuilds the DB every 24 h; CLI `update` command pulls and verifies the latest CSV.
@@ -53,7 +53,16 @@ rwcheck doi "https://doi.org/10.1038/nature12345"   # URL prefix is stripped
 rwcheck pmid 12345678
 ```
 
-### 5. Batch check from a file
+### 5. Check by title
+
+```bash
+rwcheck title "Moderation of gut microbiota is associated with..."
+```
+
+> **Note:** Matching is exact and case-insensitive. When a match is found a warning
+> is shown — confirm the result with a DOI or PMID before citing.
+
+### 6. Batch check from a file
 
 ```bash
 # Plain text (one DOI per line)
@@ -65,7 +74,7 @@ rwcheck batch-doi papers.txt --out json | jq '.results[] | select(.matched)'
 rwcheck batch-doi references.csv --col doi
 ```
 
-### 6. Check a BibTeX file
+### 7. Check a BibTeX file
 
 ```bash
 rwcheck batch-bib refs.bib
@@ -88,7 +97,7 @@ rwcheck batch-bib refs.bib --report-dir ./reports/
 rwcheck batch-bib refs.bib --api https://rwcheck.khanlab.bio
 ```
 
-### 7. Update the database
+### 8. Update the database
 
 ```bash
 rwcheck update           # download latest CSV; skip if unchanged
@@ -119,6 +128,7 @@ The server downloads the latest Retraction Watch CSV on startup and every 24 hou
 | `GET` | `/stats` | Aggregate statistics (totals, by year, top journals, by country) |
 | `GET` | `/check/doi/{doi}` | Look up a DOI (slashes in DOIs are supported) |
 | `GET` | `/check/pmid/{pmid}` | Look up a PubMed ID |
+| `GET` | `/check/title/{title}` | Exact title lookup (case-insensitive); result includes `match_type: "title"` warning |
 | `POST` | `/check/batch` | Batch lookup (up to 500 items) |
 | `POST` | `/check/bib` | Upload a `.bib` file; returns retracted/clean summary |
 | `GET` | `/health` | Health check |
@@ -135,6 +145,9 @@ curl "https://rwcheck.khanlab.bio/check/doi/10.1038/nature12345"
 
 # PubMed ID lookup
 curl "https://rwcheck.khanlab.bio/check/pmid/12345678"
+
+# Title lookup (URL-encode spaces and special characters)
+curl "https://rwcheck.khanlab.bio/check/title/Moderation%20of%20gut%20microbiota"
 
 # Batch lookup
 curl -X POST https://rwcheck.khanlab.bio/check/batch \
@@ -257,11 +270,12 @@ See [DEPLOY.md](DEPLOY.md) for full EC2 setup instructions with Caddy reverse pr
 ```
 Usage: rwcheck [OPTIONS] COMMAND [ARGS]...
 
-  Check DOIs/PMIDs against the Retraction Watch dataset.
+  Check DOIs, PMIDs, and titles against the Retraction Watch dataset.
 
 Commands:
   doi         Check a single DOI.
   pmid        Check a single PubMed ID.
+  title       Check by exact title (case-insensitive); warns to confirm with DOI/PMID.
   batch-doi   Batch-check DOIs from a text or CSV file.
   batch-pmid  Batch-check PMIDs from a text or CSV file.
   batch-bib   Check all references in a BibTeX file; write JSON/Markdown/HTML reports.

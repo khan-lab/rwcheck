@@ -139,6 +139,37 @@ curl "http://localhost:8000/check/pmid/12345678"
 
 ---
 
+### `GET /check/title/{title}`
+
+Check a single paper title (exact, case-insensitive match).
+
+**Path parameter**
+
+| Parameter | Description |
+|---|---|
+| `title` | URL-encoded paper title |
+
+**Example**
+```bash
+curl "http://localhost:8000/check/title/Moderation%20of%20gut%20microbiota"
+```
+
+**Response** — same shape as `/check/doi/{doi}` with two extra top-level fields:
+```json
+{
+  "query": "Moderation of gut microbiota",
+  "match_type": "title",
+  "matched": false,
+  "matches": [],
+  "meta": { "dataset_version": "...", "built_at": "...", "row_count": "45231", ... }
+}
+```
+
+> **Note:** A `match_type: "title"` field is always present as a reminder to confirm
+> positive results with a DOI or PMID.
+
+---
+
 ### `POST /check/batch`
 
 Check a list of DOIs and/or PMIDs in a single request.
@@ -256,6 +287,12 @@ Fields returned inside every `matches` array:
     # Single DOI
     curl "http://localhost:8000/check/doi/10.1038%2Fnature12345" | jq .
 
+    # Single PMID
+    curl "http://localhost:8000/check/pmid/12345678" | jq .
+
+    # Title lookup
+    curl "http://localhost:8000/check/title/Moderation%20of%20gut%20microbiota" | jq .
+
     # Batch
     curl -X POST "http://localhost:8000/check/batch" \
       -H "Content-Type: application/json" \
@@ -264,13 +301,20 @@ Fields returned inside every `matches` array:
 
 === "Python (httpx)"
     ```python
-    import httpx
+    import httpx, urllib.parse
 
     BASE = "http://localhost:8000"
 
     # Single DOI
     r = httpx.get(f"{BASE}/check/doi/10.1038%2Fnature12345")
     print(r.json()["matched"])
+
+    # Title lookup
+    t = urllib.parse.quote("Example Paper Title", safe="")
+    r = httpx.get(f"{BASE}/check/title/{t}")
+    data = r.json()
+    if data["matched"]:
+        print("RETRACTED — verify with DOI/PMID")
 
     # Batch
     r = httpx.post(f"{BASE}/check/batch", json={
@@ -283,13 +327,20 @@ Fields returned inside every `matches` array:
 
 === "Python (requests)"
     ```python
-    import requests
+    import requests, urllib.parse
 
     BASE = "http://localhost:8000"
 
     # Single DOI
     r = requests.get(f"{BASE}/check/doi/10.1038%2Fnature12345")
     print(r.json()["matched"])
+
+    # Title lookup
+    t = urllib.parse.quote("Example Paper Title", safe="")
+    r = requests.get(f"{BASE}/check/title/{t}")
+    data = r.json()
+    if data["matched"]:
+        print("RETRACTED — verify with DOI/PMID")
 
     # Batch
     r = requests.post(f"{BASE}/check/batch", json={

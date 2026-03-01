@@ -2,7 +2,7 @@
 
 **Fast Retraction Watch lookup — REST API, CLI, and Python library.**
 
-RWCheck lets you check DOIs and PubMed IDs against the [Retraction Watch](https://retractionwatch.com/) dataset in milliseconds. It ships as:
+RWCheck lets you check DOIs, PubMed IDs, and titles against the [Retraction Watch](https://retractionwatch.com/) dataset in milliseconds. It ships as:
 
 - A **command-line tool** (`rwcheck`) for interactive use and scripting
 - A **Python library** (`import rwcheck`) for programmatic access
@@ -25,6 +25,9 @@ rwcheck doi 10.1038/nature12345
 
 # Check a PubMed ID
 rwcheck pmid 12345678
+
+# Check by exact title (case-insensitive)
+rwcheck title "Exact paper title here"
 ```
 
 ---
@@ -35,6 +38,7 @@ rwcheck pmid 12345678
 |---|---|
 | **DOI lookup** | Normalises URL/bare DOIs; case-insensitive |
 | **PMID lookup** | Integer or string input |
+| **Title lookup** | Exact case-insensitive title match; warns to verify with DOI/PMID |
 | **Batch DOI/PMID** | Text file (one per line) or CSV with `--col` |
 | **BibTeX check** | Extracts DOIs & PMIDs from every entry, writes MD + HTML + JSON reports |
 | **Python API** | `check_doi()`, `check_pmid()`, `check_batch()` |
