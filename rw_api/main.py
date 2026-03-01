@@ -50,9 +50,10 @@ from rw_api.models import (
     MetaResponse,
     RecordSummary,
     StatsResponse,
+    TitleMatchResponse,
 )
 from rwcheck.bib import parse_bib_file
-from rwcheck.db import get_meta, get_stats, query_batch, query_by_doi, query_by_pmid
+from rwcheck.db import get_meta, get_stats, query_batch, query_by_doi, query_by_pmid, query_by_title
 from rwcheck.normalize import normalize_pmid
 
 log = logging.getLogger("rw_api")
@@ -423,6 +424,13 @@ pre {
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 
+/* ── Inline radio mode selector ── */
+.checker-h3{font-size:0.95rem;font-weight:700;margin-bottom:10px;color:#444;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mode-radio{font-size:0.82rem;font-weight:400;color:#555;cursor:pointer}
+.mode-radio input{margin-right:3px;accent-color:#2c3e50;cursor:pointer}
+/* ── Title match amber badge ── */
+.title-badge{display:inline-block;margin-top:.4rem;padding:.2rem .55rem;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:4px;font-size:.78rem;font-weight:600}
+
 /* ── Warning banner ── */
 .warn-banner {
     background:#fff3cd; border:1px solid #ffc107; border-radius:8px;
@@ -517,9 +525,9 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     else:
         w('<span class="brand">RW<span>Check</span></span>')
     w('<span class="spacer"></span>')
-    w('<a href="/docs" target="_blank" rel="noopener">API Docs</a>')
-    w('<a href="https://khan-lab.github.io/rwcheck" target="_blank" rel="noopener">CLI Docs</a>')
-    w('<a href="/stats">Stats JSON</a>')
+    w('<a href="/docs" target="_blank" rel="noopener">REST API</a>')
+    w('<a href="https://khan-lab.github.io/rwcheck" target="_blank" rel="noopener">CLI</a>')
+    #w('<a href="/stats">Stats JSON</a>')
     w('<a href="/health">Health</a>')
     w('<a href="https://github.com/khan-lab/rwcheck" target="_blank" rel="noopener">GitHub</a>')
     w("</nav>")
@@ -528,13 +536,14 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
 
     # ── Hero ──────────────────────────────────────────────────────────────────
     w('<section class="hero">')
-    w("<h1><b>RWCheck</b>: Fast retractions screening REST API and CLI</h1>")
+    #w("<h1>Prevent retracted papers from propagating into your citations</h1>")
+    w("<h1>Retraction Watch Checks at Scale – Web • REST API • CLI</h1>")
+    w("<h4><i><b>RWCheck</b> provides fast screening of DOIs, PubMed IDs, and BibTeX files against a versioned Retraction Watch snapshot.</i></h4>")
     w(
-        "<p>Retractions are easy to miss and hard to track at scale. "
-        "<b>RWCheck</b> provides instant DOI/PMID/.bib screening against a versioned "
-        '<a href="https://retractionwatch.com/" target="_blank" rel="noopener">Retraction Watch</a> snapshot '
-        "via SQLite, REST API, and CLI so researchers, librarians, and journals can quickly validate references in manuscripts. "
-        "The local SQLite database is rebuilt automatically every 24 hours.</p>"
+        "<p>Use the <b>web app</b> for quick checks, the <b>CLI</b> to scan manuscripts and " \
+        "<b>BibTeX</b> at scale, or the <b>REST API</b> to automate screening in reference managers "
+        "and journal workflows. A local, indexed SQLite snapshot powers offline use and is rebuilt " \
+        "on a daily basis with provenance metadata.</p>"
     )
     # Last-updated subtitle + two-column checker grid
     if db_ok:
@@ -545,7 +554,14 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     w('<div class="check-grid">')
     # ── Left: DOI / PMID checker ────────────────────────────────────────────
     w('<div class="check-col"><div class="checker">')
-    w('<h3>Check a DOI or PMID</h3>')
+    w('<h3 class="checker-h3">Check a: '
+      '<label class="mode-radio"><input type="radio" name="searchMode" value="doi" '
+      'checked onchange="setMode(\'doi\')"> DOI</label>'
+      '<label class="mode-radio"><input type="radio" name="searchMode" value="pmid" '
+      'onchange="setMode(\'pmid\')"> PMID</label>'
+      '<label class="mode-radio"><input type="radio" name="searchMode" value="title" '
+      'onchange="setMode(\'title\')"> Title</label>'
+      '</h3>')
     w('<div class="checker-row">')
     w('<input id="doi-input" type="text" '
       'placeholder="e.g. 10.1038/nature12345 or 12345678" spellcheck="false">')
@@ -659,24 +675,24 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
             _year_js = ""
 
         # ── Top 10 journals ───────────────────────────────────────────────────
-        top = stats.get("top_journals", [])
-        if top:
-            max_count = top[0][1] if top else 1
-            w('<div class="section">')
-            w("<h2>Top 10 Most-Retracted Journals/Conferences</h2>")
-            w('<table class="data-table"><thead>')
-            w("<tr><th>#</th><th>Journal/Conference</th><th>Retractions</th></tr>")
-            w("</thead><tbody>")
-            for i, (journal, count) in enumerate(top, 1):
-                bar_w = int(count / max_count * 120)
-                w(
-                    f"<tr><td>{i}</td>"
-                    f"<td>{_h(journal)}</td>"
-                    f'<td><span class="rank-bar" style="width:{bar_w}px"></span>{count:,}</td>'
-                    f"</tr>"
-                )
-            w("</tbody></table>")
-            w("</div>")
+        # top = stats.get("top_journals", [])
+        # if top:
+        #     max_count = top[0][1] if top else 1
+        #     w('<div class="section">')
+        #     w("<h2>Top 10 Most-Retracted Journals/Conferences</h2>")
+        #     w('<table class="data-table"><thead>')
+        #     w("<tr><th>#</th><th>Journal/Conference</th><th>Retractions</th></tr>")
+        #     w("</thead><tbody>")
+        #     for i, (journal, count) in enumerate(top, 1):
+        #         bar_w = int(count / max_count * 120)
+        #         w(
+        #             f"<tr><td>{i}</td>"
+        #             f"<td>{_h(journal)}</td>"
+        #             f'<td><span class="rank-bar" style="width:{bar_w}px"></span>{count:,}</td>'
+        #             f"</tr>"
+        #         )
+        #     w("</tbody></table>")
+        #     w("</div>")
 
         
 
@@ -829,9 +845,9 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
     # ── Footer ────────────────────────────────────────────────────────────────
     w("<footer>")
     if db_ok and version:
-        w(f"Dataset version <code>{version}</code> · {row_count:,} records · ")
+        w(f"Dataset version <code>{version}</code> · {row_count:,} records · Check the API <a href='/health'>Health</a> | ")
     w(
-        'Powered by <a href="https://github.com/khan-lab/rwcheck">rwcheck</a> · '
+        'Powered by <a href="https://github.com/khan-lab/rwcheck">RWCheck</a> | '
         'Data from <a href="https://retractionwatch.com/">Retraction Watch</a>'
     )
     w("</footer>")
@@ -880,21 +896,33 @@ function _entryKv(m) {
                            kv += '<span class="k">Paywalled</span><span class="v">' + m.paywalled + '</span>';
   return kv ? '<div class="result-kv">' + kv + '</div>' : '';
 }
+var _mode = 'doi';
+function setMode(m) {
+  _mode = m;
+  var ph = {doi:'e.g. 10.1038/nature12345 or https://doi.org/10.1038/nature12345',
+             pmid:'e.g. 12345678',
+             title:'Exact paper title (case-insensitive)'};
+  document.getElementById('doi-input').placeholder = ph[m];
+}
 function checkLookup() {
   var q = document.getElementById('doi-input').value.trim();
   if (!q) return;
   var st = document.getElementById('checker-status');
   st.innerHTML = 'Checking\u2026';
-  q = q.replace(/^https?:\\/\\/(?:dx\\.)?doi\\.org\\//, '');
-  var isPmid = /^\\d+$/.test(q);
-  var url = isPmid ? '/check/pmid/' + encodeURIComponent(q)
-                   : '/check/doi/'  + encodeURIComponent(q);
+  var url;
+  if (_mode === 'title') {
+    url = '/check/title/' + encodeURIComponent(q);
+  } else {
+    q = q.replace(/^https?:\\/\\/(?:dx\\.)?doi\\.org\\//, '');
+    url = _mode === 'pmid' ? '/check/pmid/' + encodeURIComponent(q)
+                           : '/check/doi/'  + encodeURIComponent(q);
+  }
   fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(d){
       st.innerHTML = '';
-      var lbl = isPmid ? 'PMID \u00b7 <code>' + q + '</code>'
-                       : 'DOI \u00b7 <code>' + q + '</code>';
+      var modeLabel = {doi:'DOI', pmid:'PMID', title:'Title'}[_mode];
+      var lbl = modeLabel + ' \u00b7 <code>' + q + '</code>';
       var html = _hdr(lbl);
       if (d.matched) {
         d.matches.forEach(function(m) {
@@ -902,6 +930,9 @@ function checkLookup() {
           var date   = m.retraction_date ? ' \u00b7 ' + m.retraction_date.substring(0,10) : '';
           html += '<div class="result-entry ret">'
                 + '<div class="result-status">&#9888; ' + nature + date + '</div>';
+          if (_mode === 'title') {
+            html += '<div class="title-badge">&#128269; Title match \u2014 verify with DOI or PMID</div>';
+          }
           if (m.title) html += '<div class="result-title">' + m.title + '</div>';
           html += _entryKv(m) + '</div>';
         });
@@ -1055,6 +1086,32 @@ async def match_pmid(pmid: str, request: Request) -> MatchResponse:
     rows = query_by_pmid(conn, norm)
     return MatchResponse(
         query=pmid,
+        matched=bool(rows),
+        matches=[_to_summary(r) for r in rows],
+        meta=_meta_response(),
+    )
+
+
+@app.get(
+    "/check/title/{title}",
+    response_model=TitleMatchResponse,
+    tags=["lookup"],
+    summary="Look up by exact title (case-insensitive)",
+)
+@limiter.limit(_RATE_LIMIT)
+async def match_title(title: str, request: Request) -> TitleMatchResponse:
+    """Check whether *title* exactly matches (case-insensitively) a record in
+    the Retraction Watch dataset.
+
+    Results should be verified with a DOI or PMID — title data quality varies.
+    Returns ``matched: false`` rather than a 404 when not found.
+    """
+    _require_db()
+    conn = _get_conn()
+    rows = query_by_title(conn, title)
+    return TitleMatchResponse(
+        query=title,
+        match_type="title",
         matched=bool(rows),
         matches=[_to_summary(r) for r in rows],
         meta=_meta_response(),

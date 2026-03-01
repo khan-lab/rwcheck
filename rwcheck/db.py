@@ -239,6 +239,43 @@ def query_by_pmid(conn: sqlite3.Connection, pmid: int | str) -> list[dict[str, A
     return result
 
 
+def query_by_title(conn: sqlite3.Connection, title: str) -> list[dict[str, Any]]:
+    """Case-insensitive exact title match.
+
+    Parameters
+    ----------
+    conn:
+        Open database connection.
+    title:
+        Paper title (leading/trailing whitespace is stripped).
+
+    Returns
+    -------
+    list[dict]
+        Matching record summaries (may be empty).  Results should be
+        verified with a DOI or PMID — title data quality varies.
+
+    Notes
+    -----
+    Performance: index ``idx_title_lower`` speeds this up; without it the
+    query falls back to a full-table scan (~69 k rows, still fast).
+    """
+    norm = title.strip()
+    if not norm:
+        return []
+    rows = conn.execute(
+        f"{_SELECT} WHERE LOWER(title) = LOWER(?)",
+        (norm,),
+    ).fetchall()
+    seen: set[int] = set()
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if row["record_id"] not in seen:
+            seen.add(row["record_id"])
+            result.append(_row_to_summary(row))
+    return result
+
+
 def query_batch(
     conn: sqlite3.Connection,
     dois: list[str] | None = None,

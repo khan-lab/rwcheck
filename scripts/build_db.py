@@ -94,10 +94,11 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 
 -- Indexes for O(log n) lookups.
-CREATE INDEX IF NOT EXISTS idx_orig_doi  ON retractions (original_paper_doi);
-CREATE INDEX IF NOT EXISTS idx_ret_doi   ON retractions (retraction_doi);
-CREATE INDEX IF NOT EXISTS idx_orig_pmid ON retractions (original_paper_pmid);
-CREATE INDEX IF NOT EXISTS idx_ret_pmid  ON retractions (retraction_pmid);
+CREATE INDEX IF NOT EXISTS idx_orig_doi   ON retractions (original_paper_doi);
+CREATE INDEX IF NOT EXISTS idx_ret_doi    ON retractions (retraction_doi);
+CREATE INDEX IF NOT EXISTS idx_orig_pmid  ON retractions (original_paper_pmid);
+CREATE INDEX IF NOT EXISTS idx_ret_pmid   ON retractions (retraction_pmid);
+CREATE INDEX IF NOT EXISTS idx_title_lower ON retractions (LOWER(title));
 """
 
 # ── Date normalisation ─────────────────────────────────────────────────────────

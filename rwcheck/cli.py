@@ -36,7 +36,14 @@ from rich.console import Console
 from rich.table import Table
 
 from rwcheck import __version__
-from rwcheck.db import get_connection, get_meta, query_batch, query_by_doi, query_by_pmid
+from rwcheck.db import (
+    get_connection,
+    get_meta,
+    query_batch,
+    query_by_doi,
+    query_by_pmid,
+    query_by_title,
+)
 from rwcheck.normalize import normalize_doi, normalize_pmid
 
 app = typer.Typer(
@@ -244,6 +251,57 @@ def pmid(
         meta = get_meta(conn)
         matches = query_by_pmid(conn, norm)
         _print_matches(pmid_str, bool(matches), matches, meta, as_json)
+
+
+@app.command()
+def title(
+    query: Annotated[str, typer.Argument(metavar="TITLE", help="Exact title to search (case-insensitive).")],
+    db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
+    api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output raw JSON.")] = False,
+) -> None:
+    """Check a paper by exact title match (case-insensitive).
+
+    \b
+    Results should be verified with a DOI or PMID — title data quality
+    in the Retraction Watch dataset can vary.
+    """
+    if api:
+        import urllib.parse
+        encoded = urllib.parse.quote(query, safe="")
+        data = _api_get(api, f"check/title/{encoded}")
+        matches = data.get("matches", [])
+        if as_json:
+            out_console.print_json(json.dumps(data))
+            return
+        matched = data.get("matched", False)
+    else:
+        conn = _db_conn(db)
+        meta = get_meta(conn)
+        matches = query_by_title(conn, query)
+        matched = bool(matches)
+        if as_json:
+            out_console.print_json(json.dumps({
+                "query": query, "match_type": "title",
+                "matched": matched, "matches": matches, "meta": meta,
+            }))
+            return
+
+    if not matched:
+        rprint(f"[bold green]NOT FOUND[/bold green]  query=[cyan]{query}[/cyan]  (no retraction records)")
+        return
+
+    rprint(f"[bold red]RETRACTED[/bold red]  query=[cyan]{query}[/cyan]  ({len(matches)} record(s))")
+    rprint("[yellow]  ⚠ Title match — verify with DOI or PMID.[/yellow]")
+    for m in matches:
+        _print_match_table(m)
+
+    if not api:
+        rprint(
+            f"[dim]Dataset: {meta.get('dataset_version', 'n/a')} | "
+            f"rows={meta.get('row_count', 'n/a')} | "
+            f"built={meta.get('built_at', 'n/a')}[/dim]"
+        )
 
 
 @app.command(name="batch-doi")

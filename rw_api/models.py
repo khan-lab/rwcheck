@@ -50,6 +50,17 @@ class MatchResponse(BaseModel):
     meta: MetaResponse
 
 
+class TitleMatchResponse(BaseModel):
+    """Response for ``GET /check/title/{title}`` — like MatchResponse but
+    includes ``match_type`` so clients can render the reconfirm warning."""
+
+    query: str = Field(..., description="The original title query string.")
+    match_type: str = Field("title", description="Always 'title' for this endpoint.")
+    matched: bool = Field(..., description="True if one or more records were found.")
+    matches: list[RecordSummary] = Field(default_factory=list)
+    meta: MetaResponse
+
+
 class BatchRequest(BaseModel):
     """Request body for ``POST /check/batch``."""
 
