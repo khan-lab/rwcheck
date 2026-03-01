@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rwcheck"
 version = "1.0.0"
-description = "Check DOIs/PMIDs against the Retraction Watch dataset (SQLite-backed, REST API + CLI)"
+description = "RWCheck: A command-line interface for fast Retraction Watch checks"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
@@ -55,8 +55,8 @@ rwcheck = "rwcheck.cli:app"
 build-rw-db = "scripts.build_db:main"
 
 [project.urls]
-Repository = "https://github.com/your-org/rwcheck"
-Issues = "https://github.com/your-org/rwcheck/issues"
+Repository = "https://github.com/khan-lab/rwcheck"
+Issues = "https://github.com/khan-lab/rwcheck/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["rwcheck", "rw_api", "scripts"]

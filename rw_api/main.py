@@ -533,7 +533,7 @@ def _render_landing(meta: dict[str, str], stats: dict[str, Any], db_ok: bool) ->
         "<p>Retractions are easy to miss and hard to track at scale. "
         "<b>RWCheck</b> provides instant DOI/PMID/.bib screening against a versioned "
         '<a href="https://retractionwatch.com/" target="_blank" rel="noopener">Retraction Watch</a> snapshot '
-        "via SQLite, REST API, and CLI—so so researchers, librarians, journals, and pipeline authors can quickly validate references in manuscripts. "
+        "via SQLite, REST API, and CLI so researchers, librarians, and journals can quickly validate references in manuscripts. "
         "The local SQLite database is rebuilt automatically every 24 hours.</p>"
     )
     # Last-updated subtitle + two-column checker grid

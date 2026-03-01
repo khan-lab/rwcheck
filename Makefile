@@ -63,7 +63,7 @@ docker-run:  ## Run the API in Docker (mounts ./data for persistent DB)
 compose-build:  ## Build the rwcheck image via Compose
 	docker compose build
 
-compose-up:  ## Start Traefik + rwcheck in the background (requires .env)
+compose-up:  ## Start Caddy + rwcheck in the background (requires .env)
 	docker compose up -d
 
 compose-down:  ## Stop and remove containers (volumes are preserved)

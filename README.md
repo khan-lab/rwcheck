@@ -1,50 +1,44 @@
 <img src="docs/rwcheck_logo.png" alt="RWCheck" width="300">
 
-> **RWCheck is a CLI and REST API for Fast Retraction Screening of DOIs, PubMed IDs, and BibTeX References**
+> **RWCheck — Fast retraction screening for DOIs, PubMed IDs, and BibTeX references**
 
-**Check DOIs and PubMed IDs. .bib files against the [Retraction Watch](https://retractionwatch.com/) dataset.**
-`rwcheck` ingests the Retraction Watch Data into a local **SQLite** database for O(log n) indexed lookups, exposes a **FastAPI REST API**, and provides a **CLI** for interactive and batch queries — all with no external database services required.
+Check DOIs, PubMed IDs, and `.bib` files against the [Retraction Watch](https://retractionwatch.com/) dataset.
+`rwcheck` ingests the Retraction Watch data into a local **SQLite** database for O(log n) lookups, exposes a **FastAPI REST API**, and provides a **CLI** for interactive and batch queries — no external database required.
+
+**Live API:** <https://rwcheck.khanlab.bio>
+
+---
 
 ## Features
 
-- **SQLite-backed** — fast indexed lookup; no Postgres/Redis required.
-- **Python API** (`rwcheck`) — import and call directly from Python; no server needed.
-- **REST API** (`rw_api/`) — OpenAPI docs, rate limiting, 5-min cache, daily auto-update.
-- **CLI** (`rwcheck`) — single DOI/PMID, batch from file, offline or API mode.
-- **Automatic updates** — API rebuilds the DB every 24 h; CLI `update` command pulls and hashes the latest CSV.
+- **REST API** — OpenAPI docs, rate limiting, 5-min cache, daily auto-update.
+- **CLI** — single DOI/PMID lookup, batch from file, BibTeX screening.
+- **SQLite-backed** — fast indexed lookup; no Postgres or Redis required.
+- **Python API** — import and call directly; no server needed.
+- **Auto-updates** — API rebuilds the DB every 24 h; CLI `update` command pulls and verifies the latest CSV.
 - **Reproducible** — every response includes dataset version (SHA-256), row count, and build timestamp.
-
 
 ## Quickstart
 
 ### 1. Install
 
 ```bash
-# Clone and install in editable mode (Python 3.10+)
 git clone https://github.com/khan-lab/rwcheck.git
 cd rwcheck
-pip install -e ".[dev]"
+pip install -e ".[dev]"   # Python 3.10+
 ```
 
 ### 2. Build the local database
 
-**From the local CSV** (if you already downloaded `retraction_watch.csv`):
-
 ```bash
-make build-db
-# or explicitly:
-python scripts/build_db.py --csv retraction_watch.csv --db data/rw.sqlite
+make build-db-online      # download latest CSV from GitLab and build (~20 s, ~69 k rows)
 ```
 
-**Download the latest CSV from GitLab and build:**
+Or from a CSV you already have:
 
 ```bash
-make build-db-online
-# or:
-python scripts/build_db.py --url
+make build-db             # uses retraction_watch.csv in the current directory
 ```
-
-The build takes ~20 s on a modern laptop for ~69 k rows.
 
 ### 3. Check a DOI
 
@@ -61,17 +55,13 @@ rwcheck pmid 12345678
 
 ### 5. Batch check from a file
 
-**Plain text** (one DOI per line):
-
 ```bash
+# Plain text (one DOI per line)
 rwcheck batch-doi papers.txt
 rwcheck batch-doi papers.txt --out tsv > results.tsv
 rwcheck batch-doi papers.txt --out json | jq '.results[] | select(.matched)'
-```
 
-**CSV file** (specify column with `--col`):
-
-```bash
+# CSV file (specify column with --col)
 rwcheck batch-doi references.csv --col doi
 ```
 
@@ -81,50 +71,36 @@ rwcheck batch-doi references.csv --col doi
 rwcheck batch-bib refs.bib
 ```
 
-This parses every entry in the `.bib` file, extracts DOIs (from the `doi` field, or a `url` field containing `doi.org`), and PubMed IDs (from `pmid`, or `eprint`+`eprinttype=pubmed`), then queries them all against the local database.
-
-Two report files are written next to the input file:
+Extracts DOIs and PubMed IDs from every entry and queries them against the local database.
+Three report files are written next to the input:
 
 | File | Contents |
 |---|---|
-| `refs_rwcheck.md` | Human-readable Markdown: summary table, retracted entries with details, clean list |
-| `refs_rwcheck.json` | Machine-readable JSON: full match data, suitable for further processing |
-| `refs_rwcheck.html` | Self-contained HTML report: styled, browser-viewable, collapsible retracted entries |
+| `refs_rwcheck.md` | Human-readable Markdown: summary table + retracted entries |
+| `refs_rwcheck.json` | Machine-readable JSON: full match data |
+| `refs_rwcheck.html` | Self-contained HTML report: styled, collapsible retracted entries |
 
 ```bash
 # Write reports to a specific directory
 rwcheck batch-bib refs.bib --report-dir ./reports/
 
-# Use the remote API instead of the local DB
-rwcheck batch-bib refs.bib --api http://localhost:8000
-```
-
-**Example output (stdout):**
-
-```
-  Total references          42
-  Retracted                  3
-  Clean (not found)         37
-  Unchecked (no DOI/PMID)    2
-
-⚠ Retracted entries:
-  ✗ [smith2020] Smith et al. 2020 — Retraction | Nature
-
-Reports written:
-  Markdown → refs_rwcheck.md
-  JSON     → refs_rwcheck.json
+# Use the live API instead of the local DB
+rwcheck batch-bib refs.bib --api https://rwcheck.khanlab.bio
 ```
 
 ### 7. Update the database
 
 ```bash
-rwcheck update           # downloads latest CSV; skips if unchanged
+rwcheck update           # download latest CSV; skip if unchanged
 rwcheck update --force   # force rebuild regardless
 ```
 
 ## REST API
 
-### Start the server
+A public instance is running at **<https://rwcheck.khanlab.bio>**.
+Interactive docs (Swagger UI) are available at <https://rwcheck.khanlab.bio/docs>.
+
+### Run locally
 
 ```bash
 make api
@@ -132,12 +108,13 @@ make api
 # Docs: http://127.0.0.1:8000/docs
 ```
 
-The server automatically downloads the latest Retraction Watch CSV on startup and every 24 hours thereafter.
+The server downloads the latest Retraction Watch CSV on startup and every 24 hours thereafter.
 
 ### Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `GET` | `/` | Landing page with live DOI checker and dataset stats |
 | `GET` | `/meta` | Dataset metadata (version, row count, build time) |
 | `GET` | `/stats` | Aggregate statistics (totals, by year, top journals, by country) |
 | `GET` | `/check/doi/{doi}` | Look up a DOI (slashes in DOIs are supported) |
@@ -150,17 +127,17 @@ The server automatically downloads the latest Retraction Watch CSV on startup an
 ### Examples
 
 ```bash
-# Dataset info
-curl http://localhost:8000/meta
+# Dataset metadata
+curl https://rwcheck.khanlab.bio/meta
 
 # DOI lookup
-curl "http://localhost:8000/check/doi/10.1038/nature12345"
+curl "https://rwcheck.khanlab.bio/check/doi/10.1038/nature12345"
 
 # PubMed ID lookup
-curl "http://localhost:8000/check/pmid/12345678"
+curl "https://rwcheck.khanlab.bio/check/pmid/12345678"
 
-# Batch
-curl -X POST http://localhost:8000/check/batch \
+# Batch lookup
+curl -X POST https://rwcheck.khanlab.bio/check/batch \
   -H "Content-Type: application/json" \
   -d '{"dois": ["10.1038/nature12345", "10.9999/test"], "pmids": [12345678]}'
 ```
@@ -193,7 +170,6 @@ curl -X POST http://localhost:8000/check/batch \
 }
 ```
 
-
 ## Python API
 
 Use `rwcheck` directly from Python without starting the HTTP server.
@@ -201,27 +177,26 @@ Use `rwcheck` directly from Python without starting the HTTP server.
 ```python
 from rwcheck import check_doi, check_pmid, check_batch
 
-# Single DOI lookup — returns dict
+# Single DOI lookup
 result = check_doi("10.1038/nature12345", db_path="data/rw.sqlite")
 if result["matched"]:
     m = result["matches"][0]
     print(m["retraction_nature"], m["retraction_date"])
 
-# Single PMID lookup — returns dict
+# Single PMID lookup
 result = check_pmid(12345678, db_path="data/rw.sqlite")
 
-# Batch lookup — returns JSON string
+# Batch lookup
 import json
 raw = check_batch(
     dois=["10.1038/nature12345", "10.9999/test"],
     pmids=[12345678],
     db_path="data/rw.sqlite",
 )
-data = json.loads(raw)
-retracted = [r for r in data["results"] if r["matched"]]
+retracted = [r for r in json.loads(raw)["results"] if r["matched"]]
 ```
 
-If the `RW_DB_PATH` environment variable is set, `db_path` can be omitted:
+Set `RW_DB_PATH` to omit `db_path` in every call:
 
 ```python
 import os, rwcheck
@@ -238,25 +213,43 @@ result = rwcheck.check_doi("10.1038/nature12345")
 | `check_pmid(pmid)` | `dict` | `query`, `matched`, `matches`, `meta` |
 | `check_batch(dois, pmids)` | `str` (JSON) | `results` (list), `meta` |
 
-Each item in `matches` / `results[].matches` contains: `record_id`, `title`, `journal`, `retraction_nature`, `retraction_date`, `reason`, `original_paper_doi`, `retraction_doi`, `original_paper_pmid`, `country`, `paywalled`, and more.
+Each item in `matches` contains: `record_id`, `title`, `journal`, `retraction_nature`, `retraction_date`, `reason`, `original_paper_doi`, `retraction_doi`, `original_paper_pmid`, `country`, `paywalled`, and more.
 
 
 ## Docker
 
+Docker images are published to the GitHub Container Registry:
+
+| Image | Description |
+|---|---|
+| `ghcr.io/khan-lab/rwcheck` | CLI tool |
+| `ghcr.io/khan-lab/rwcheck-api` | REST API |
+
+### CLI image
+
 ```bash
-# Build image
+# Pull and run
+docker run --rm -v "$(pwd)/data:/app/data" ghcr.io/khan-lab/rwcheck doi 10.1038/nature12345
+
+# Build locally
 make docker-build
-
-# Run (mounts ./data for persistent SQLite DB)
-make docker-run
+docker run --rm -v "$(pwd)/data:/app/data" rwcheck:latest doi 10.1038/nature12345
 ```
 
-Or directly:
+### API image
 
 ```bash
-docker build -t rwcheck .
-docker run -p 8000:8000 -v "$(pwd)/data:/app/data" rwcheck
+# Pull and run
+docker run --rm -p 8000:8000 -v "$(pwd)/data:/app/data" ghcr.io/khan-lab/rwcheck-api
+
+# Build locally
+make docker-build-api
+make docker-run       # equivalent: docker run -p 8000:8000 -v ./data:/app/data rwcheck-api:latest
 ```
+
+### Production deployment (Docker Compose + Caddy)
+
+See [DEPLOY.md](DEPLOY.md) for full EC2 setup instructions with Caddy reverse proxy, automatic HTTPS, and persistent volumes.
 
 
 ## CLI Reference
@@ -271,7 +264,7 @@ Commands:
   pmid        Check a single PubMed ID.
   batch-doi   Batch-check DOIs from a text or CSV file.
   batch-pmid  Batch-check PMIDs from a text or CSV file.
-  batch-bib   Check all references in a BibTeX file; write JSON + Markdown report.
+  batch-bib   Check all references in a BibTeX file; write JSON/Markdown/HTML reports.
   update      Download the latest dataset and rebuild the local DB.
 
 Options:
@@ -292,14 +285,15 @@ Options:
 | `--force` | Force DB rebuild even if unchanged |
 
 
-## Environment variables (API + Python API)
+## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RW_DB_PATH` | `data/rw.sqlite` | SQLite database path (used by API server and Python API) |
+| `RW_DB_PATH` | `data/rw.sqlite` | SQLite database path |
 | `RW_CSV_URL` | GitLab raw URL | Retraction Watch CSV source |
-| `RATE_LIMIT` | `60/minute` | slowapi rate limit per IP |
-| `UPDATE_INTERVAL_HOURS` | `24` | Hours between auto-updates |
+| `RATE_LIMIT` | `60/minute` | API rate limit per IP (slowapi) |
+| `UPDATE_INTERVAL_HOURS` | `24` | Hours between automatic DB updates |
+| `PUBLIC_HOST` | `http://localhost:8000` | Base URL shown in API responses and landing page |
 
 
 ## Development
@@ -316,4 +310,3 @@ make test-cov   # pytest with coverage report
 ## Data source
 
 The Retraction Watch dataset is maintained by the [Center for Scientific Integrity](https://retractionwatch.com/) and distributed via [CrossRef on GitLab](https://gitlab.com/crossref/retraction-watch-data). Please review their [terms of use](https://gitlab.com/crossref/retraction-watch-data) before deploying publicly.
-
