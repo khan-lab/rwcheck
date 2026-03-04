@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rwcheck"
-version = "1.1.0"
+version = "1.2.0"
 description = "RWCheck: A command-line interface for fast Retraction Watch checks"
 readme = "README.md"
 license = { text = "MIT" }
@@ -34,6 +34,8 @@ dependencies = [
     "pydantic>=2.6",
     "pycountry>=23.0",
     "python-multipart>=0.0.9",
+    "nicegui>=2.0",
+    "plotly>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +55,7 @@ docs = [
 [project.scripts]
 rwcheck = "rwcheck.cli:app"
 build-rw-db = "scripts.build_db:main"
+rwcheck-pre-commit = "rwcheck.pre_commit_hook:run"
 
 [project.urls]
 Repository = "https://github.com/khan-lab/rwcheck"

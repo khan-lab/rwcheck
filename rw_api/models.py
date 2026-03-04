@@ -112,6 +112,49 @@ class BibCheckResponse(BaseModel):
     meta: MetaResponse
 
 
+class SearchResponse(BaseModel):
+    """Response for ``GET /search``."""
+
+    total: int = Field(..., description="Total matching records (before pagination).")
+    limit: int = Field(..., description="Page size used.")
+    offset: int = Field(..., description="Page offset used.")
+    results: list[RecordSummary] = Field(default_factory=list)
+    meta: MetaResponse
+
+
+class CrossRefMeta(BaseModel):
+    """Metadata from the CrossRef REST API for a single DOI."""
+
+    title: str | None = None
+    journal: str | None = None
+    year: int | None = None
+    citation_count: int | None = Field(None, description="Total times cited (is-referenced-by-count).")
+    type: str | None = Field(None, description="Publication type (e.g. journal-article).")
+    authors: list[str] = Field(default_factory=list, description="Author display names.")
+
+
+class OpenAlexMeta(BaseModel):
+    """Metadata from the OpenAlex API for a single DOI."""
+
+    cited_by_count: int | None = None
+    cited_by_count_post_retraction: int | None = Field(
+        None,
+        description="Citations received in the retraction year and later (requires retraction_date).",
+    )
+    primary_topic: str | None = None
+    open_access_status: str | None = None
+    openalex_url: str | None = None
+
+
+class EnrichResponse(BaseModel):
+    """Response for ``GET /enrich/doi/{doi}``."""
+
+    doi: str = Field(..., description="Normalised DOI queried.")
+    retraction_status: MatchResponse = Field(..., description="RW database lookup result.")
+    crossref: CrossRefMeta | None = Field(None, description="CrossRef metadata (None on API error).")
+    openalex: OpenAlexMeta | None = Field(None, description="OpenAlex metadata (None on API error).")
+
+
 class StatsResponse(BaseModel):
     """Response for ``GET /stats`` — aggregate dataset statistics."""
 

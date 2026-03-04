@@ -18,6 +18,8 @@ env/
 data/*.sqlite
 data/*.csv
 data/*.db
+data/*.sqlite-shm
+data/*.sqlite-wal
 
 # IDE
 .vscode/
@@ -40,5 +42,12 @@ coverage.xml
 # MkDocs build output
 site/
 
+# RWCheck reports
+rw_reports/
+
 # .env (local secrets — never commit)
 .env
+
+
+paper.bib
+paper.md

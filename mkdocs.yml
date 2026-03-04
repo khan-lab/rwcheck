@@ -33,6 +33,8 @@ nav:
   - CLI Reference: cli.md
   - Python API: python-api.md
   - REST API: rest-api.md
+  - Workflows:
+      - Zotero & Mendeley: zotero-workflow.md
 
 plugins:
   - search

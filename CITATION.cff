@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "RWCheck: A fast, offline tool for screening references against the Retraction Watch database"
+version: "1.1.0"
+date-released: "2026-03-02"
+repository-code: "https://github.com/khan-lab/rwcheck"
+url: "https://rwcheck.khanlab.bio"
+license: MIT
+keywords:
+  - retraction
+  - research integrity
+  - DOI
+  - PubMed
+  - BibTeX
+  - REST API
+  - bibliometrics
+authors:
+  - family-names: Khan
+    given-names: Aziz
+    orcid: "https://orcid.org/0000-0002-6327-3348"
+    affiliation: "Mohamed bin Zayed University of Artificial Intelligence (MBZUAI), Abu Dhabi, UAE"
+preferred-citation:
+  type: article
+  title: "RWCheck: A fast, offline tool for screening references against the Retraction Watch database"
+  authors:
+    - family-names: Khan
+      given-names: Aziz
+      orcid: "https://orcid.org/0000-0002-6327-3348"
+      affiliation: "Mohamed bin Zayed University of Artificial Intelligence (MBZUAI), Abu Dhabi, UAE"
+  journal: "Journal of Open Source Software"
+  year: 2026
+  url: "https://joss.theoj.org"

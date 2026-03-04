@@ -11,10 +11,13 @@ Check DOIs, PubMed IDs, and `.bib` files against the [Retraction Watch](https://
 
 ## Features
 
-- **REST API** — OpenAPI docs, rate limiting, 5-min cache, daily auto-update.
-- **CLI** — single DOI/PMID/title lookup, batch from file, BibTeX screening.
+- **REST API** — versioned (`/api/v1/`), OpenAPI docs, rate limiting, daily auto-update.
+- **CLI** — single DOI/PMID/title lookup, batch from file, BibTeX screening; `--api` flag delegates to any rwcheck server.
 - **SQLite-backed** — fast indexed lookup; no Postgres or Redis required.
 - **Python API** — import and call directly; no server needed.
+- **Search** — filter the dataset by journal, author, country, publisher, reason, or year.
+- **Enrich** — augment a DOI with CrossRef + OpenAlex metadata in one call.
+- **Persistent reports** — browser UI stores `.bib` reports server-side with shareable links, ZIP download, and auto-delete after 7 days.
 - **Auto-updates** — API rebuilds the DB every 24 h; CLI `update` command pulls and verifies the latest CSV.
 - **Reproducible** — every response includes dataset version (SHA-256), row count, and build timestamp.
 
@@ -121,38 +124,53 @@ The server downloads the latest Retraction Watch CSV on startup and every 24 hou
 
 ### Endpoints
 
+All data endpoints are versioned under `/api/v1/`. The root UI and health check stay at the top level.
+
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/` | Landing page with live DOI checker and dataset stats |
-| `GET` | `/meta` | Dataset metadata (version, row count, build time) |
-| `GET` | `/stats` | Aggregate statistics (totals, by year, top journals, by country) |
-| `GET` | `/check/doi/{doi}` | Look up a DOI (slashes in DOIs are supported) |
-| `GET` | `/check/pmid/{pmid}` | Look up a PubMed ID |
-| `GET` | `/check/title/{title}` | Exact title lookup (case-insensitive); result includes `match_type: "title"` warning |
-| `POST` | `/check/batch` | Batch lookup (up to 500 items) |
-| `POST` | `/check/bib` | Upload a `.bib` file; returns retracted/clean summary |
-| `GET` | `/health` | Health check |
-| `GET` | `/docs` | Swagger UI |
+| `GET` | `/` | Browser UI (NiceGUI SPA) |
+| `GET` | `/health` | Liveness check |
+| `GET` | `/docs` | Swagger / OpenAPI UI |
+| `GET` | `/api/v1/meta` | Dataset metadata (version, row count, build time) |
+| `GET` | `/api/v1/stats` | Aggregate statistics (totals, by year, top journals, by country) |
+| `GET` | `/api/v1/check/doi/{doi}` | Look up a DOI (slashes in DOIs are supported) |
+| `GET` | `/api/v1/check/pmid/{pmid}` | Look up a PubMed ID |
+| `GET` | `/api/v1/check/title/{title}` | Exact title lookup (case-insensitive); result includes `match_type: "title"` warning |
+| `POST` | `/api/v1/check/batch` | Batch lookup (up to 500 items) |
+| `POST` | `/api/v1/check/bib` | Upload a `.bib` file; returns retracted/clean summary |
+| `GET` | `/api/v1/search` | Filter dataset by journal, author, country, publisher, reason, or year |
+| `GET` | `/api/v1/enrich/doi/{doi}` | Retraction status + CrossRef + OpenAlex metadata |
+| `GET` | `/api/v1/reports/{id}/html` | Serve a stored `.bib` report as HTML |
+| `GET` | `/api/v1/reports/{id}/zip` | Download a stored `.bib` report as ZIP |
+| `DELETE` | `/api/v1/reports/{id}` | Delete a stored report from the server |
 
 ### Examples
 
 ```bash
+BASE="https://rwcheck.khanlab.bio/api/v1"
+
 # Dataset metadata
-curl https://rwcheck.khanlab.bio/meta
+curl "$BASE/meta"
 
 # DOI lookup
-curl "https://rwcheck.khanlab.bio/check/doi/10.1038/nature12345"
+curl "$BASE/check/doi/10.1038/nature12345"
 
 # PubMed ID lookup
-curl "https://rwcheck.khanlab.bio/check/pmid/12345678"
+curl "$BASE/check/pmid/12345678"
 
 # Title lookup (URL-encode spaces and special characters)
-curl "https://rwcheck.khanlab.bio/check/title/Moderation%20of%20gut%20microbiota"
+curl "$BASE/check/title/Moderation%20of%20gut%20microbiota"
 
 # Batch lookup
-curl -X POST https://rwcheck.khanlab.bio/check/batch \
+curl -X POST "$BASE/check/batch" \
   -H "Content-Type: application/json" \
   -d '{"dois": ["10.1038/nature12345", "10.9999/test"], "pmids": [12345678]}'
+
+# Search (filter by reason, paginate)
+curl "$BASE/search?reason=fabrication&limit=20"
+
+# Enrich a DOI with CrossRef + OpenAlex metadata
+curl "$BASE/enrich/doi/10.1038/nature12345"
 ```
 
 ### Response format
@@ -307,7 +325,9 @@ Options:
 | `RW_CSV_URL` | GitLab raw URL | Retraction Watch CSV source |
 | `RATE_LIMIT` | `60/minute` | API rate limit per IP (slowapi) |
 | `UPDATE_INTERVAL_HOURS` | `24` | Hours between automatic DB updates |
-| `PUBLIC_HOST` | `http://localhost:8000` | Base URL shown in API responses and landing page |
+| `RW_PUBLIC_HOST` | `http://localhost:8000` | Base URL used in share links (e.g. `https://rwcheck.example.com`) |
+| `RW_REPORTS_DIR` | `rw_reports` | Directory for server-side `.bib` reports |
+| `RW_REPORT_MAX_AGE_DAYS` | `7` | Days before uploaded reports are auto-deleted |
 
 
 ## Development

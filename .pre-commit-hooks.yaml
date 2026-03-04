@@ -1,0 +1,11 @@
+- id: rwcheck-bib
+  name: RWCheck — screen .bib files for retractions
+  description: >
+    Checks all staged BibTeX (.bib) files against the Retraction Watch database.
+    Fails if any reference is found to be retracted.
+  language: python
+  entry: rwcheck-pre-commit
+  types: [file]
+  files: \.bib$
+  pass_filenames: true
+  additional_dependencies: []

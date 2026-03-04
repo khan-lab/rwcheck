@@ -221,7 +221,7 @@ def doi(
     if api:
         import urllib.parse
         encoded = urllib.parse.quote(normalize_doi(doi_str) or doi_str, safe="")
-        data = _api_get(api, f"match/doi/{encoded}")
+        data = _api_get(api, f"api/v1/check/doi/{encoded}")
         _print_matches(doi_str, data["matched"], data["matches"], data["meta"], as_json)
     else:
         conn = _db_conn(db)
@@ -244,7 +244,7 @@ def pmid(
         raise typer.Exit(1)
 
     if api:
-        data = _api_get(api, f"match/pmid/{norm}")
+        data = _api_get(api, f"api/v1/check/pmid/{norm}")
         _print_matches(pmid_str, data["matched"], data["matches"], data["meta"], as_json)
     else:
         conn = _db_conn(db)
@@ -269,7 +269,7 @@ def title(
     if api:
         import urllib.parse
         encoded = urllib.parse.quote(query, safe="")
-        data = _api_get(api, f"check/title/{encoded}")
+        data = _api_get(api, f"api/v1/check/title/{encoded}")
         matches = data.get("matches", [])
         if as_json:
             out_console.print_json(json.dumps(data))
@@ -336,7 +336,7 @@ def batch_doi(
         console.print(f"[dim]Checking {len(dois)} DOI(s)…[/dim]")
 
     if api:
-        data = _api_post(api, "match/batch", {"dois": dois, "pmids": []})
+        data = _api_post(api, "api/v1/check/batch", {"dois": dois, "pmids": []})
         results = data["results"]
         meta = data["meta"]
     else:
@@ -407,7 +407,7 @@ def batch_pmid(
         )
 
     if api:
-        data = _api_post(api, "match/batch", {"dois": [], "pmids": pmids})
+        data = _api_post(api, "api/v1/check/batch", {"dois": [], "pmids": pmids})
         results = data["results"]
         meta = data["meta"]
     else:
@@ -488,7 +488,7 @@ def batch_bib(
         # Use the REST API for lookups.
         bib_results = _batch_bib_via_api(api, entries, doi_map, pmid_map)
         # Fetch meta from API.
-        api_meta = _api_get(api, "meta")
+        api_meta = _api_get(api, "api/v1/meta")
         meta = {k: str(v) for k, v in api_meta.items()}
     else:
         conn = _db_conn(db)
@@ -564,7 +564,7 @@ def _batch_bib_via_api(
     from rwcheck.report import BibResult
 
     body: dict = {"dois": list(doi_map.keys()), "pmids": list(pmid_map.keys())}
-    data = _api_post(api, "match/batch", body)
+    data = _api_post(api, "api/v1/check/batch", body)
 
     doi_lookup: dict[str, list[dict]] = {}
     pmid_lookup: dict[int, list[dict]] = {}

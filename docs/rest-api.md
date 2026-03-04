@@ -20,6 +20,20 @@ The browser UI is at `http://localhost:8000` and the OpenAPI (Swagger) docs are 
 
 ---
 
+## URL structure
+
+All versioned endpoints live under `/api/v1/`. The two root-level routes stay unversioned:
+
+| Path | Notes |
+|---|---|
+| `/` | Browser UI (NiceGUI SPA) |
+| `/health` | Liveness check |
+| `/docs` | Swagger / OpenAPI UI |
+| `/redoc` | ReDoc UI |
+| `/api/v1/*` | All data endpoints |
+
+---
+
 ## Endpoints
 
 ### `GET /health`
@@ -33,7 +47,7 @@ Liveness check. Returns `200 OK` if the service is running.
 
 ---
 
-### `GET /meta`
+### `GET /api/v1/meta`
 
 Dataset provenance — when the DB was last built and from where.
 
@@ -50,7 +64,7 @@ Dataset provenance — when the DB was last built and from where.
 
 ---
 
-### `GET /stats`
+### `GET /api/v1/stats`
 
 Aggregate statistics about the dataset.
 
@@ -60,18 +74,19 @@ Aggregate statistics about the dataset.
   "total_records": 45231,
   "total_journals": 8412,
   "total_countries": 94,
+  "total_authors": 112345,
   "doi_coverage": 39801,
   "pmid_coverage": 32100,
-  "by_year": [["2000", 12], ["2001", 34], ...],
-  "top_journals": [["PLOS ONE", 2100], ...],
-  "by_country": [["United States", 12000], ...],
-  "meta": { ... }
+  "by_year": [["2000", 12], ["2001", 34], "..."],
+  "top_journals": [["PLOS ONE", 2100], "..."],
+  "by_country": [["United States", 12000], "..."],
+  "meta": { "..." }
 }
 ```
 
 ---
 
-### `GET /check/doi/{doi}`
+### `GET /api/v1/check/doi/{doi}`
 
 Check a single DOI.
 
@@ -79,11 +94,13 @@ Check a single DOI.
 
 | Parameter | Description |
 |---|---|
-| `doi` | URL-encoded DOI (e.g. `10.1038%2Fnature12345`) |
+| `doi` | DOI string (bare or URL-encoded). URL prefixes (`https://doi.org/`) and `doi:` prefixes are stripped automatically. DOIs containing slashes are passed directly. |
 
 **Example**
 ```bash
-curl "http://localhost:8000/check/doi/10.1038%2Fnature12345"
+curl "http://localhost:8000/api/v1/check/doi/10.1038%2Fnature12345"
+# slashes in the DOI do not need encoding:
+curl "http://localhost:8000/api/v1/check/doi/10.1051/e3sconf/202453804025"
 ```
 
 **Response**
@@ -92,7 +109,7 @@ curl "http://localhost:8000/check/doi/10.1038%2Fnature12345"
   "query": "10.1038/nature12345",
   "matched": false,
   "matches": [],
-  "meta": { "dataset_version": "...", "built_at": "...", "row_count": "45231", ... }
+  "meta": { "dataset_version": "...", "built_at": "...", "row_count": "45231" }
 }
 ```
 
@@ -110,17 +127,16 @@ When matched:
       "retraction_nature": "Retraction",
       "reason": "Data Fabrication",
       "original_paper_doi": "10.1016/j.cell.2009.10.015",
-      "retraction_doi": "10.1016/j.cell.2010.01.010",
-      ...
+      "retraction_doi": "10.1016/j.cell.2010.01.010"
     }
   ],
-  "meta": { ... }
+  "meta": { "..." }
 }
 ```
 
 ---
 
-### `GET /check/pmid/{pmid}`
+### `GET /api/v1/check/pmid/{pmid}`
 
 Check a single PubMed ID.
 
@@ -132,14 +148,14 @@ Check a single PubMed ID.
 
 **Example**
 ```bash
-curl "http://localhost:8000/check/pmid/12345678"
+curl "http://localhost:8000/api/v1/check/pmid/12345678"
 ```
 
-**Response** — same shape as `/check/doi/{doi}`, with `"query": 12345678`.
+**Response** — same shape as `/api/v1/check/doi/{doi}`, with `"query": 12345678`.
 
 ---
 
-### `GET /check/title/{title}`
+### `GET /api/v1/check/title/{title}`
 
 Check a single paper title (exact, case-insensitive match).
 
@@ -151,17 +167,17 @@ Check a single paper title (exact, case-insensitive match).
 
 **Example**
 ```bash
-curl "http://localhost:8000/check/title/Moderation%20of%20gut%20microbiota"
+curl "http://localhost:8000/api/v1/check/title/Moderation%20of%20gut%20microbiota"
 ```
 
-**Response** — same shape as `/check/doi/{doi}` with two extra top-level fields:
+**Response** — same shape as `/api/v1/check/doi/{doi}` with two extra top-level fields:
 ```json
 {
   "query": "Moderation of gut microbiota",
   "match_type": "title",
   "matched": false,
   "matches": [],
-  "meta": { "dataset_version": "...", "built_at": "...", "row_count": "45231", ... }
+  "meta": { "..." }
 }
 ```
 
@@ -170,9 +186,9 @@ curl "http://localhost:8000/check/title/Moderation%20of%20gut%20microbiota"
 
 ---
 
-### `POST /check/batch`
+### `POST /api/v1/check/batch`
 
-Check a list of DOIs and/or PMIDs in a single request.
+Check a list of DOIs and/or PMIDs in a single request. Maximum 500 items per call.
 
 **Request body**
 ```json
@@ -184,7 +200,7 @@ Check a list of DOIs and/or PMIDs in a single request.
 
 **Example**
 ```bash
-curl -X POST "http://localhost:8000/check/batch" \
+curl -X POST "http://localhost:8000/api/v1/check/batch" \
   -H "Content-Type: application/json" \
   -d '{"dois": ["10.1038/nature12345"], "pmids": [12345678]}'
 ```
@@ -206,17 +222,15 @@ curl -X POST "http://localhost:8000/check/batch" \
       "matches": []
     }
   ],
-  "meta": { ... }
+  "meta": { "..." }
 }
 ```
 
-**Rate limit** — defaults to 60 requests/minute per IP. Override with the `RATE_LIMIT` environment variable.
-
 ---
 
-### `POST /check/bib`
+### `POST /api/v1/check/bib`
 
-Upload a BibTeX file and check every reference.
+Upload a BibTeX file and check every reference. Returns a JSON summary; for full HTML/Markdown/JSON reports use the browser UI.
 
 **Request**
 - Content-Type: `multipart/form-data`
@@ -224,7 +238,7 @@ Upload a BibTeX file and check every reference.
 
 **Example**
 ```bash
-curl -X POST "http://localhost:8000/check/bib" \
+curl -X POST "http://localhost:8000/api/v1/check/bib" \
   -F "file=@refs.bib"
 ```
 
@@ -242,13 +256,145 @@ curl -X POST "http://localhost:8000/check/bib" \
       "doi": "10.1016/j.cell.2009.10.015",
       "pmid": null,
       "matched": true,
-      "matches": [ { ... } ]
-    },
-    ...
+      "matches": [ { "..." } ]
+    }
   ],
-  "meta": { ... }
+  "meta": { "..." }
 }
 ```
+
+---
+
+### `GET /api/v1/search`
+
+Search the dataset by journal, author, country, publisher, reason, or year. At least one filter is required.
+
+**Query parameters**
+
+| Parameter | Match type | Description |
+|---|---|---|
+| `journal` | Exact (case-insensitive) | Journal name |
+| `author` | Partial (`LIKE`) | Author substring |
+| `country` | Partial (`LIKE`) | Country substring |
+| `publisher` | Partial (`LIKE`) | Publisher substring |
+| `reason` | Partial (`LIKE`) | Retraction reason substring |
+| `year` | Prefix match | Retraction year (e.g. `2020`) |
+| `limit` | — | Max results (default `100`, max `500`) |
+| `offset` | — | Pagination offset (default `0`) |
+
+**Example**
+```bash
+# All retractions in PLOS ONE
+curl "http://localhost:8000/api/v1/search?journal=PLOS+ONE"
+
+# Data fabrication retractions in the USA, paginated
+curl "http://localhost:8000/api/v1/search?reason=fabrication&country=United+States&limit=50&offset=0"
+```
+
+**Response**
+```json
+{
+  "total": 312,
+  "limit": 100,
+  "offset": 0,
+  "results": [
+    {
+      "record_id": 12345,
+      "title": "Example Paper",
+      "journal": "PLOS ONE",
+      "retraction_date": "2020-03-01",
+      "reason": "Data Fabrication",
+      "country": "United States"
+    }
+  ],
+  "meta": { "..." }
+}
+```
+
+---
+
+### `GET /api/v1/enrich/doi/{doi}`
+
+Enrich a DOI with metadata from CrossRef and OpenAlex, alongside the retraction status. External API calls are made in parallel and time out after 10 seconds each.
+
+**Path parameter**
+
+| Parameter | Description |
+|---|---|
+| `doi` | DOI string (same normalisation as `/api/v1/check/doi`) |
+
+**Example**
+```bash
+curl "http://localhost:8000/api/v1/enrich/doi/10.9999%2Fjmat.2020.001234"
+```
+
+**Response**
+```json
+{
+  "doi": "10.9999/jmat.2020.001234",
+  "retraction_status": {
+    "matched": true,
+    "matches": [ { "..." } ]
+  },
+  "crossref": {
+    "title": "Example Paper",
+    "container-title": ["Journal of Materials"],
+    "published": { "date-parts": [[2020, 3, 1]] },
+    "author": [ { "family": "Smith", "given": "J." } ]
+  },
+  "openalex": {
+    "id": "https://openalex.org/W1234567890",
+    "cited_by_count": 42,
+    "open_access": { "is_oa": true, "oa_url": "https://..." }
+  }
+}
+```
+
+Fields are `null` when the external API is unavailable or times out.
+
+---
+
+### `GET /api/v1/reports/{id}/html`
+
+Serve the HTML report for a previously uploaded `.bib` file (generated via the browser UI). The report ID is a UUID assigned at upload time.
+
+**Example**
+```bash
+curl "http://localhost:8000/api/v1/reports/550e8400-e29b-41d4-a716-446655440000/html"
+```
+
+Returns an `text/html` response with the self-contained report. Returns `404` if the report has been deleted or expired.
+
+---
+
+### `GET /api/v1/reports/{id}/zip`
+
+Download all three report files (`.json`, `.md`, `.html`) as a ZIP archive.
+
+**Example**
+```bash
+curl -OJ "http://localhost:8000/api/v1/reports/550e8400-e29b-41d4-a716-446655440000/zip"
+```
+
+Returns a `application/zip` stream. Returns `404` if the report does not exist.
+
+---
+
+### `DELETE /api/v1/reports/{id}`
+
+Delete a report from the server immediately.
+
+**Example**
+```bash
+curl -X DELETE "http://localhost:8000/api/v1/reports/550e8400-e29b-41d4-a716-446655440000"
+```
+
+**Response**
+```json
+{ "deleted": true }
+```
+
+Returns `404` if the report does not exist. Reports are also automatically deleted after `RW_REPORT_MAX_AGE_DAYS` days (default: 7).
 
 ---
 
@@ -284,26 +430,34 @@ Fields returned inside every `matches` array:
 
 === "curl"
     ```bash
+    BASE="http://localhost:8000/api/v1"
+
     # Single DOI
-    curl "http://localhost:8000/check/doi/10.1038%2Fnature12345" | jq .
+    curl "$BASE/check/doi/10.1038%2Fnature12345" | jq .
 
     # Single PMID
-    curl "http://localhost:8000/check/pmid/12345678" | jq .
+    curl "$BASE/check/pmid/12345678" | jq .
 
     # Title lookup
-    curl "http://localhost:8000/check/title/Moderation%20of%20gut%20microbiota" | jq .
+    curl "$BASE/check/title/Moderation%20of%20gut%20microbiota" | jq .
 
     # Batch
-    curl -X POST "http://localhost:8000/check/batch" \
+    curl -X POST "$BASE/check/batch" \
       -H "Content-Type: application/json" \
       -d '{"dois": ["10.1038/nature12345"], "pmids": [12345678]}' | jq .
+
+    # Search
+    curl "$BASE/search?journal=PLOS+ONE&limit=10" | jq .
+
+    # Enrich
+    curl "$BASE/enrich/doi/10.1038%2Fnature12345" | jq .
     ```
 
 === "Python (httpx)"
     ```python
     import httpx, urllib.parse
 
-    BASE = "http://localhost:8000"
+    BASE = "http://localhost:8000/api/v1"
 
     # Single DOI
     r = httpx.get(f"{BASE}/check/doi/10.1038%2Fnature12345")
@@ -323,13 +477,21 @@ Fields returned inside every `matches` array:
     })
     for item in r.json()["results"]:
         print(item["query"], "→", "RETRACTED" if item["matched"] else "ok")
+
+    # Search
+    r = httpx.get(f"{BASE}/search", params={"reason": "fabrication", "limit": 20})
+    print(r.json()["total"], "records found")
+
+    # Enrich
+    r = httpx.get(f"{BASE}/enrich/doi/10.1038%2Fnature12345")
+    print(r.json()["crossref"])
     ```
 
 === "Python (requests)"
     ```python
     import requests, urllib.parse
 
-    BASE = "http://localhost:8000"
+    BASE = "http://localhost:8000/api/v1"
 
     # Single DOI
     r = requests.get(f"{BASE}/check/doi/10.1038%2Fnature12345")
@@ -350,6 +512,10 @@ Fields returned inside every `matches` array:
     for item in r.json()["results"]:
         status = "RETRACTED" if item["matched"] else "ok"
         print(f"[{status}] {item['query']}")
+
+    # Search
+    r = requests.get(f"{BASE}/search", params={"journal": "PLOS ONE", "limit": 50})
+    print(r.json()["total"], "records found")
     ```
 
 ---
@@ -362,5 +528,8 @@ Fields returned inside every `matches` array:
 | `RW_CSV_URL` | GitLab URL | Source URL for auto-updates |
 | `RATE_LIMIT` | `60/minute` | Rate limit per IP (e.g. `120/minute`) |
 | `UPDATE_INTERVAL_HOURS` | `24` | Background auto-update interval |
+| `RW_REPORTS_DIR` | `rw_reports` | Directory for server-side `.bib` reports |
+| `RW_REPORT_MAX_AGE_DAYS` | `7` | Days before uploaded reports are auto-deleted |
+| `RW_PUBLIC_HOST` | *(empty)* | Public base URL used in share links (e.g. `https://rwcheck.example.com`) |
 
 The API auto-updates the database on a background schedule. The first update runs at startup if the database does not yet exist.

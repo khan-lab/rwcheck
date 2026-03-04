@@ -1,0 +1,27 @@
+name: Retraction Watch BibTeX Check
+
+# Run whenever a .bib file changes on a pull request or push to main.
+on:
+  push:
+    branches: ["main"]
+    paths: ["**/*.bib"]
+  pull_request:
+    paths: ["**/*.bib"]
+
+jobs:
+  rwcheck:
+    name: Screen references for retractions
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check .bib files against Retraction Watch
+        uses: khan-lab/rwcheck-action@v1
+        with:
+          bib-files: '**/*.bib'        # check all .bib files in the repo
+          fail-on-retraction: 'true'   # fail the workflow if retractions found
+          post-summary: 'true'         # write results to the job summary

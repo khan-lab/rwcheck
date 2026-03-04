@@ -291,6 +291,85 @@ def query_by_title(conn: sqlite3.Connection, title: str) -> list[dict[str, Any]]
     return result
 
 
+def search_records(
+    conn: sqlite3.Connection,
+    *,
+    author: str | None = None,
+    country: str | None = None,
+    journal: str | None = None,
+    publisher: str | None = None,
+    year: int | None = None,
+    published_year: int | None = None,
+    reason: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> tuple[int, list[dict[str, Any]]]:
+    """Filter records by field values (AND logic).
+
+    Parameters
+    ----------
+    conn:
+        Open database connection.
+    journal:
+        Case-insensitive exact match.
+    country, author, publisher, reason:
+        Case-insensitive substring (LIKE) match.  ``country`` uses substring
+        matching because the column stores semicolon-separated values
+        (e.g. ``"China;United States"``).
+    year:
+        Retraction year (integer, e.g. 2020).
+    published_year:
+        Original paper publication year.
+    limit, offset:
+        Pagination controls.
+
+    Returns
+    -------
+    tuple[int, list[dict]]
+        (total_matching_records, page_of_results)
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+
+    # Exact match (case-insensitive) for journal.
+    if journal:
+        conditions.append("LOWER(journal) = LOWER(?)")
+        params.append(journal)
+
+    # Substring match for country (semicolon-separated multi-country values),
+    # author, publisher, and reason.
+    for col, val in [
+        ("country", country),
+        ("author", author),
+        ("publisher", publisher),
+        ("reason", reason),
+    ]:
+        if val:
+            conditions.append(f"LOWER({col}) LIKE LOWER(?)")
+            params.append(f"%{val}%")
+
+    if year is not None:
+        conditions.append("SUBSTR(retraction_date,1,4) = ?")
+        params.append(str(year))
+
+    if published_year is not None:
+        conditions.append("SUBSTR(original_paper_date,1,4) = ?")
+        params.append(str(published_year))
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    total: int = conn.execute(
+        f"SELECT COUNT(*) AS n FROM retractions {where}", params
+    ).fetchone()["n"]
+
+    rows = conn.execute(
+        f"{_SELECT} {where} ORDER BY retraction_date DESC LIMIT ? OFFSET ?",
+        params + [limit, offset],
+    ).fetchall()
+
+    return total, [_row_to_summary(r) for r in rows]
+
+
 def query_batch(
     conn: sqlite3.Connection,
     dois: list[str] | None = None,

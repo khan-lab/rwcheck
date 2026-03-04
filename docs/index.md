@@ -41,8 +41,11 @@ rwcheck title "Exact paper title here"
 | **Title lookup** | Exact case-insensitive title match; warns to verify with DOI/PMID |
 | **Batch DOI/PMID** | Text file (one per line) or CSV with `--col` |
 | **BibTeX check** | Extracts DOIs & PMIDs from every entry, writes MD + HTML + JSON reports |
+| **Search** | Filter dataset by journal, author, country, publisher, reason, or year |
+| **Enrich** | Augment a DOI with CrossRef + OpenAlex metadata in one call |
+| **Persistent reports** | Browser UI stores `.bib` reports server-side; shareable link, ZIP download, auto-delete after 7 days |
 | **Python API** | `check_doi()`, `check_pmid()`, `check_batch()` |
-| **REST API** | FastAPI with OpenAPI docs, rate limiting, background auto-update |
+| **REST API** | Versioned (`/api/v1/`) FastAPI with OpenAPI docs, rate limiting, background auto-update |
 | **Self-hosted** | Single Docker container; data volume for the SQLite DB |
 | **Offline** | No network calls at query time after initial DB build |
 
