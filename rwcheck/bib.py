@@ -34,14 +34,14 @@ class BibEntry:
     """A single parsed BibTeX entry."""
 
     key: str
-    entry_type: str                       # article, inproceedings, book, …
+    entry_type: str  # article, inproceedings, book, …
     title: str | None = None
-    authors: str | None = None            # raw ``author`` field
+    authors: str | None = None  # raw ``author`` field
     year: str | None = None
-    journal: str | None = None            # journal / booktitle / series
-    doi: str | None = None                # normalised DOI
-    doi_raw: str | None = None            # original DOI string from .bib
-    pmid: int | None = None               # PubMed ID
+    journal: str | None = None  # journal / booktitle / series
+    doi: str | None = None  # normalised DOI
+    doi_raw: str | None = None  # original DOI string from .bib
+    pmid: int | None = None  # PubMed ID
     raw_fields: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -194,9 +194,7 @@ def _strip_braces(text: str) -> str:
 
 # ── DOI / PMID extraction ─────────────────────────────────────────────────────
 
-_DOI_IN_URL_RE = re.compile(
-    r"https?://(?:dx\.)?doi\.org/(.+)", re.IGNORECASE
-)
+_DOI_IN_URL_RE = re.compile(r"https?://(?:dx\.)?doi\.org/(.+)", re.IGNORECASE)
 
 
 def _extract_doi(fields: dict[str, str]) -> tuple[str | None, str | None]:
@@ -238,6 +236,7 @@ def _extract_pmid(fields: dict[str, str]) -> int | None:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def parse_bib_file(path: Path) -> list[BibEntry]:
     """Parse a ``.bib`` file and return a list of :class:`BibEntry` objects.

@@ -131,6 +131,7 @@ def _close_thread_conn() -> None:
 
 # ── Background DB update & report cleanup ─────────────────────────────────────
 
+
 def _cleanup_old_reports() -> None:
     """Remove report directories older than _REPORT_MAX_AGE_DAYS days."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=_REPORT_MAX_AGE_DAYS)
@@ -139,9 +140,7 @@ def _cleanup_old_reports() -> None:
             continue
         meta_file = report_dir / "meta.json"
         try:
-            created = datetime.fromisoformat(
-                _json.loads(meta_file.read_text())["created_at"]
-            )
+            created = datetime.fromisoformat(_json.loads(meta_file.read_text())["created_at"])
             # Ensure timezone-aware for comparison
             if created.tzinfo is None:
                 created = created.replace(tzinfo=timezone.utc)
@@ -171,6 +170,7 @@ def _update_db_task() -> None:
 
 # ── Cached meta (cleared on rebuild) ──────────────────────────────────────────
 
+
 @lru_cache(maxsize=1)
 def _cached_meta() -> dict[str, str]:
     return get_meta(_get_conn())
@@ -193,6 +193,7 @@ def _meta_response() -> MetaResponse:
 
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -217,9 +218,7 @@ async def lifespan(app: FastAPI):
     t = threading.Thread(target=_update_db_task, daemon=True, name="initial-db-update")
     t.start()
 
-    log.info(
-        "rwcheck API started. DB=%s, update_interval=%dh", _DB_PATH, _UPDATE_INTERVAL_HOURS
-    )
+    log.info("rwcheck API started. DB=%s, update_interval=%dh", _DB_PATH, _UPDATE_INTERVAL_HOURS)
     yield
     # ── Shutdown ─────────────────────────────────────────────────────────────
     scheduler.shutdown(wait=False)
@@ -250,6 +249,7 @@ api_v1 = APIRouter(prefix="/api/v1")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def _db_available() -> bool:
     return _DB_PATH.exists()
 
@@ -271,6 +271,7 @@ def _to_summary(row: dict[str, Any]) -> RecordSummary:
 
 # ── Logo (embedded as base64 data URI so the page works without static files) ──
 
+
 def _load_logo() -> str:
     # In a dev editable install __file__ is inside the project root, so
     # parent.parent resolves correctly.  In a wheel install (Docker) __file__
@@ -289,10 +290,6 @@ def _load_logo() -> str:
 _LOGO_DATA_URI = _load_logo()
 
 
-
-
-
-
 # ── Country → ISO-3 mapping ────────────────────────────────────────────────────
 
 # Hardcoded overrides for names that pycountry doesn't resolve correctly.
@@ -300,19 +297,19 @@ _ISO3_OVERRIDES: dict[str, str | None] = {
     "United States": "USA",
     "South Korea": "KOR",
     "North Korea": "PRK",
-    "Taiwan": "TWN",         # not UN-recognised but has ISO 3166-1 code
-    "Russia": "RUS",         # pycountry uses "Russian Federation"
-    "Iran": "IRN",           # "Iran, Islamic Republic of"
-    "Czech Republic": "CZE", # now "Czechia" in pycountry
-    "Palestine": "PSE",      # "Palestine, State of"
-    "Vietnam": "VNM",        # "Viet Nam"
-    "Bolivia": "BOL",        # "Bolivia, Plurinational State of"
-    "Venezuela": "VEN",      # "Venezuela, Bolivarian Republic of"
-    "Moldova": "MDA",        # "Moldova, Republic of"
-    "Laos": "LAO",           # "Lao People's Democratic Republic"
-    "Syria": "SYR",          # "Syrian Arab Republic"
-    "Tanzania": "TZA",       # "Tanzania, United Republic of"
-    "Kosovo": None,          # disputed; no standard ISO-3
+    "Taiwan": "TWN",  # not UN-recognised but has ISO 3166-1 code
+    "Russia": "RUS",  # pycountry uses "Russian Federation"
+    "Iran": "IRN",  # "Iran, Islamic Republic of"
+    "Czech Republic": "CZE",  # now "Czechia" in pycountry
+    "Palestine": "PSE",  # "Palestine, State of"
+    "Vietnam": "VNM",  # "Viet Nam"
+    "Bolivia": "BOL",  # "Bolivia, Plurinational State of"
+    "Venezuela": "VEN",  # "Venezuela, Bolivarian Republic of"
+    "Moldova": "MDA",  # "Moldova, Republic of"
+    "Laos": "LAO",  # "Lao People's Democratic Republic"
+    "Syria": "SYR",  # "Syrian Arab Republic"
+    "Tanzania": "TZA",  # "Tanzania, United Republic of"
+    "Kosovo": None,  # disputed; no standard ISO-3
     "Unknown": None,
 }
 
@@ -330,8 +327,6 @@ def _map_country_to_iso3(name: str) -> str | None:
             return results[0].alpha_3 if results else None
         except LookupError:
             return None
-
-
 
 
 @api_v1.get(
@@ -447,7 +442,10 @@ async def search_endpoint(
     request: Request,
     journal: str | None = Query(None, description="Exact journal name (case-insensitive)."),
     author: str | None = Query(None, description="Partial author name (case-insensitive)."),
-    country: str | None = Query(None, description="Partial country name (case-insensitive); matches multi-country values like 'China;United States'."),
+    country: str | None = Query(
+        None,
+        description="Partial country name (case-insensitive); matches multi-country values like 'China;United States'.",
+    ),
     publisher: str | None = Query(None, description="Partial publisher name (case-insensitive)."),
     reason: str | None = Query(None, description="Partial retraction reason (case-insensitive)."),
     year: int | None = Query(None, description="Retraction year (e.g. 2020)."),
@@ -462,9 +460,7 @@ async def search_endpoint(
     At least one filter parameter must be provided.
     """
     _require_db()
-    if all(
-        v is None for v in (journal, author, country, publisher, reason, year, published_year)
-    ):
+    if all(v is None for v in (journal, author, country, publisher, reason, year, published_year)):
         raise HTTPException(status_code=400, detail="At least one filter parameter is required.")
     conn = _get_conn()
     total, records = search_records(
@@ -546,8 +542,7 @@ async def _fetch_crossref(doi: str) -> CrossRefMeta | None:
         parts = (pub.get("date-parts") or [[]])[0]
         year = parts[0] if parts else None
         authors = [
-            f"{a.get('given', '')} {a.get('family', '')}".strip()
-            for a in (msg.get("author") or [])
+            f"{a.get('given', '')} {a.get('family', '')}".strip() for a in (msg.get("author") or [])
         ]
         return CrossRefMeta(
             title=title,
@@ -594,6 +589,7 @@ async def _fetch_openalex(doi: str, retraction_year: int | None) -> OpenAlexMeta
 
 
 # ── /enrich/doi ────────────────────────────────────────────────────────────────
+
 
 @api_v1.get(
     "/enrich/doi/{doi:path}",
@@ -646,6 +642,7 @@ async def enrich_doi(doi: str, request: Request) -> EnrichResponse:
 
 # ── /check/bib ─────────────────────────────────────────────────────────────────
 
+
 @api_v1.post(
     "/check/bib",
     response_model=BibCheckResponse,
@@ -681,14 +678,16 @@ async def check_bib(
             if m["record_id"] not in seen:
                 seen.add(m["record_id"])
                 all_matches.append(m)
-        results.append(BibCheckEntry(
-            key=entry.key,
-            title=entry.title,
-            doi=entry.doi_raw,
-            pmid=entry.pmid,
-            matched=bool(all_matches),
-            matches=[_to_summary(m) for m in all_matches],
-        ))
+        results.append(
+            BibCheckEntry(
+                key=entry.key,
+                title=entry.title,
+                doi=entry.doi_raw,
+                pmid=entry.pmid,
+                matched=bool(all_matches),
+                matches=[_to_summary(m) for m in all_matches],
+            )
+        )
 
     retracted = sum(1 for r in results if r.matched)
     unchecked = sum(1 for r in results if not r.doi and not r.pmid)
@@ -705,6 +704,7 @@ async def check_bib(
 
 # ── Report serving (download / share / delete) ────────────────────────────────
 
+
 def _validate_report_id(report_id: str) -> None:
     if not _re.fullmatch(r"[0-9a-f\-]{36}", report_id):
         raise HTTPException(status_code=400, detail="Invalid report ID")
@@ -720,7 +720,9 @@ async def serve_report_html(report_id: str) -> FileResponse:
     return FileResponse(files[0], media_type="text/html")
 
 
-@api_v1.get("/reports/{report_id}/zip", tags=["reports"], summary="Download ZIP of all report formats")
+@api_v1.get(
+    "/reports/{report_id}/zip", tags=["reports"], summary="Download ZIP of all report formats"
+)
 async def download_report_zip(report_id: str) -> StreamingResponse:
     """Stream a ZIP archive containing the JSON, Markdown, and HTML reports."""
     _validate_report_id(report_id)
@@ -756,6 +758,7 @@ app.include_router(api_v1)
 
 # ── Health ─────────────────────────────────────────────────────────────────────
 
+
 @app.get("/health", tags=["system"], include_in_schema=False)
 async def health() -> JSONResponse:
     return JSONResponse({"status": "ok", "db_exists": _db_available()})
@@ -764,6 +767,7 @@ async def health() -> JSONResponse:
 # ── NiceGUI landing page ────────────────────────────────────────────────────────
 # Imported for its @ui.page("/") side-effect; must come after `app` is defined.
 from nicegui import ui  # noqa: E402
+
 import rw_api.ui_page  # noqa: F401, E402
 
 ui.run_with(app, title="RWCheck", favicon="🔬", storage_secret="rwcheck-ui")

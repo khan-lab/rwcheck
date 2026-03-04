@@ -8,6 +8,7 @@ from rwcheck.normalize import normalize_doi, normalize_pmid
 
 # ── normalize_doi ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize(
     "raw, expected",
     [
@@ -46,6 +47,7 @@ def test_normalize_doi(raw: str | None, expected: str | None) -> None:
 
 
 # ── normalize_pmid ────────────────────────────────────────────────────────────
+
 
 @pytest.mark.parametrize(
     "raw, expected",

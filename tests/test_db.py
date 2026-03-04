@@ -15,6 +15,7 @@ def _conn(sample_db: Path):
 
 # ── meta ──────────────────────────────────────────────────────────────────────
 
+
 def test_meta_keys(sample_db: Path) -> None:
     conn = _conn(sample_db)
     meta = get_meta(conn)
@@ -25,6 +26,7 @@ def test_meta_keys(sample_db: Path) -> None:
 
 
 # ── DOI lookups ───────────────────────────────────────────────────────────────
+
 
 def test_doi_hit_original_paper(sample_db: Path) -> None:
     """Lookup by original-paper DOI returns a match."""
@@ -71,6 +73,7 @@ def test_doi_uppercase(sample_db: Path) -> None:
 
 # ── PMID lookups ──────────────────────────────────────────────────────────────
 
+
 def test_pmid_hit_original(sample_db: Path) -> None:
     conn = _conn(sample_db)
     results = query_by_pmid(conn, 12345678)
@@ -99,6 +102,7 @@ def test_pmid_zero(sample_db: Path) -> None:
 
 # ── Batch ─────────────────────────────────────────────────────────────────────
 
+
 def test_batch_mixed(sample_db: Path) -> None:
     conn = _conn(sample_db)
     results = query_batch(
@@ -124,6 +128,7 @@ def test_batch_empty(sample_db: Path) -> None:
 
 
 # ── DB not found ──────────────────────────────────────────────────────────────
+
 
 def test_get_connection_missing_db(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="Database not found"):

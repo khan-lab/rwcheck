@@ -42,6 +42,7 @@ def client(sample_db: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 # ── /api/v1/meta ──────────────────────────────────────────────────────────────
 
+
 def test_get_meta(client: TestClient) -> None:
     resp = client.get("/api/v1/meta")
     assert resp.status_code == 200
@@ -52,6 +53,7 @@ def test_get_meta(client: TestClient) -> None:
 
 
 # ── /api/v1/check/doi ─────────────────────────────────────────────────────────
+
 
 def test_match_doi_hit(client: TestClient) -> None:
     resp = client.get("/api/v1/check/doi/10.9999/jmat.2020.001234")
@@ -91,6 +93,7 @@ def test_match_doi_with_slashes(client: TestClient) -> None:
 
 # ── /api/v1/check/pmid ────────────────────────────────────────────────────────
 
+
 def test_match_pmid_hit(client: TestClient) -> None:
     resp = client.get("/api/v1/check/pmid/12345678")
     assert resp.status_code == 200
@@ -111,6 +114,7 @@ def test_match_pmid_invalid(client: TestClient) -> None:
 
 
 # ── POST /api/v1/check/batch ──────────────────────────────────────────────────
+
 
 def test_batch_dois(client: TestClient) -> None:
     resp = client.post(
@@ -157,6 +161,7 @@ def test_batch_too_large(client: TestClient) -> None:
 
 # ── /health ───────────────────────────────────────────────────────────────────
 
+
 def test_health(client: TestClient) -> None:
     resp = client.get("/health")
     assert resp.status_code == 200
@@ -168,6 +173,7 @@ def test_health(client: TestClient) -> None:
 # a NiceGUI shell page rather than the old hand-rendered HTML.  We only check
 # that the root route responds with 200 and HTML content.
 
+
 def test_landing_page_returns_html(client: TestClient) -> None:
     resp = client.get("/")
     assert resp.status_code == 200
@@ -176,14 +182,22 @@ def test_landing_page_returns_html(client: TestClient) -> None:
 
 # ── /api/v1/stats ─────────────────────────────────────────────────────────────
 
+
 def test_stats_endpoint_structure(client: TestClient) -> None:
     resp = client.get("/api/v1/stats")
     assert resp.status_code == 200
     data = resp.json()
     for key in (
-        "total_records", "total_journals", "total_countries", "total_authors",
-        "doi_coverage", "pmid_coverage", "by_year", "top_journals",
-        "by_country", "meta",
+        "total_records",
+        "total_journals",
+        "total_countries",
+        "total_authors",
+        "doi_coverage",
+        "pmid_coverage",
+        "by_year",
+        "top_journals",
+        "by_country",
+        "meta",
     ):
         assert key in data, f"Missing key: {key}"
     assert isinstance(data["by_year"], list)
@@ -192,11 +206,12 @@ def test_stats_endpoint_structure(client: TestClient) -> None:
 
 def test_stats_total_matches_meta(client: TestClient) -> None:
     stats = client.get("/api/v1/stats").json()
-    meta  = client.get("/api/v1/meta").json()
+    meta = client.get("/api/v1/meta").json()
     assert str(stats["total_records"]) == meta["row_count"]
 
 
 # ── GET /api/v1/search ────────────────────────────────────────────────────────
+
 
 def test_search_requires_filter(client: TestClient) -> None:
     resp = client.get("/api/v1/search")
@@ -236,6 +251,7 @@ def test_search_combined_filters(client: TestClient) -> None:
 
 # ── POST /api/v1/check/bib ────────────────────────────────────────────────────
 
+
 def test_check_bib_detects_retracted(client: TestClient, tmp_path: Path) -> None:
     bib = tmp_path / "test.bib"
     bib.write_text("@article{smith, doi={10.9999/jmat.2020.001234}}")
@@ -248,6 +264,7 @@ def test_check_bib_detects_retracted(client: TestClient, tmp_path: Path) -> None
 
 
 # ── GET /api/v1/enrich/doi ────────────────────────────────────────────────────
+
 
 async def _null_crossref(doi: str):  # noqa: ARG001
     return None
@@ -295,8 +312,7 @@ def test_enrich_doi_not_found(client: TestClient) -> None:
 
 
 def test_check_bib_non_bib_rejected(client: TestClient) -> None:
-    resp = client.post("/api/v1/check/bib",
-                       files={"file": ("report.txt", b"hello", "text/plain")})
+    resp = client.post("/api/v1/check/bib", files={"file": ("report.txt", b"hello", "text/plain")})
     assert resp.status_code == 422
 
 

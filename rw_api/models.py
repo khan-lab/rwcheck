@@ -10,7 +10,9 @@ from pydantic import BaseModel, Field
 class MetaResponse(BaseModel):
     """Contents of the ``meta`` table — dataset provenance."""
 
-    dataset_version: str = Field(..., description="Short SHA-256 of the source CSV (first 16 hex chars).")
+    dataset_version: str = Field(
+        ..., description="Short SHA-256 of the source CSV (first 16 hex chars)."
+    )
     built_at: str = Field(..., description="UTC ISO-8601 timestamp when the DB was last built.")
     row_count: str = Field(..., description="Number of rows ingested.")
     source_url: str = Field(..., description="URL or file path used to build the DB.")
@@ -128,7 +130,9 @@ class CrossRefMeta(BaseModel):
     title: str | None = None
     journal: str | None = None
     year: int | None = None
-    citation_count: int | None = Field(None, description="Total times cited (is-referenced-by-count).")
+    citation_count: int | None = Field(
+        None, description="Total times cited (is-referenced-by-count)."
+    )
     type: str | None = Field(None, description="Publication type (e.g. journal-article).")
     authors: list[str] = Field(default_factory=list, description="Author display names.")
 
@@ -151,8 +155,12 @@ class EnrichResponse(BaseModel):
 
     doi: str = Field(..., description="Normalised DOI queried.")
     retraction_status: MatchResponse = Field(..., description="RW database lookup result.")
-    crossref: CrossRefMeta | None = Field(None, description="CrossRef metadata (None on API error).")
-    openalex: OpenAlexMeta | None = Field(None, description="OpenAlex metadata (None on API error).")
+    crossref: CrossRefMeta | None = Field(
+        None, description="CrossRef metadata (None on API error)."
+    )
+    openalex: OpenAlexMeta | None = Field(
+        None, description="OpenAlex metadata (None on API error)."
+    )
 
 
 class StatsResponse(BaseModel):
@@ -165,7 +173,9 @@ class StatsResponse(BaseModel):
     doi_coverage: int = Field(..., description="Records with an original paper DOI.")
     pmid_coverage: int = Field(..., description="Records with an original paper PMID.")
     by_year: list[list] = Field(..., description="[[year_str, count], ...] sorted ascending.")
-    top_journals: list[list] = Field(..., description="[[journal_name, count], ...] top 10 by count.")
+    top_journals: list[list] = Field(
+        ..., description="[[journal_name, count], ...] top 10 by count."
+    )
     by_country: list[list] = Field(
         default_factory=list,
         description="[[country_name, count], ...] sorted descending by count.",

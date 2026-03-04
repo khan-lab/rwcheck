@@ -229,9 +229,9 @@ def test_generate_html_report_is_valid_html() -> None:
     assert "sample.bib" in html_str
     # Summary counts present.
     assert ">13<" in html_str  # total
-    assert ">1<" in html_str   # retracted
+    assert ">1<" in html_str  # retracted
     assert ">11<" in html_str  # clean
-    assert ">1<" in html_str   # unchecked
+    assert ">1<" in html_str  # unchecked
     # Sections present.
     assert "Retracted References" in html_str
     assert "Clean References" in html_str
@@ -308,7 +308,5 @@ def test_batch_bib_cli_reports_in_default_dir(sample_db: Path, tmp_path: Path) -
 
 
 def test_batch_bib_cli_missing_file(sample_db: Path) -> None:
-    result = runner.invoke(
-        app, ["batch-bib", "/nonexistent/refs.bib", "--db", str(sample_db)]
-    )
+    result = runner.invoke(app, ["batch-bib", "/nonexistent/refs.bib", "--db", str(sample_db)])
     assert result.exit_code != 0

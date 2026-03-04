@@ -54,7 +54,7 @@ app = typer.Typer(
 )
 
 console = Console(stderr=True)  # status/errors to stderr
-out_console = Console()          # results to stdout
+out_console = Console()  # results to stdout
 
 # Default local DB path (resolved relative to CWD so it works from the repo root).
 _DEFAULT_DB = "data/rw.sqlite"
@@ -68,6 +68,7 @@ class OutFormat(str, Enum):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _resolve_db(db: str) -> Path:
     """Return an absolute Path for the DB, raising UsageError if missing."""
@@ -130,11 +131,15 @@ def _print_matches(
         return
 
     if matched:
-        rprint(f"[bold red]RETRACTED[/bold red]  query=[cyan]{query}[/cyan]  ({len(matches)} record(s))")
+        rprint(
+            f"[bold red]RETRACTED[/bold red]  query=[cyan]{query}[/cyan]  ({len(matches)} record(s))"
+        )
         for m in matches:
             _print_match_table(m)
     else:
-        rprint(f"[bold green]NOT FOUND[/bold green]  query=[cyan]{query}[/cyan]  (no retraction records)")
+        rprint(
+            f"[bold green]NOT FOUND[/bold green]  query=[cyan]{query}[/cyan]  (no retraction records)"
+        )
 
     rprint(
         f"[dim]Dataset: {meta.get('dataset_version', 'n/a')} | "
@@ -179,7 +184,9 @@ def _read_ids_from_file(file: Path, col: str | None) -> list[str]:
             raise typer.Exit(1)
         col_name = col or reader.fieldnames[0]
         if col_name not in reader.fieldnames:
-            rprint(f"[red]Error:[/red] Column '{col_name}' not found. Available: {reader.fieldnames}")
+            rprint(
+                f"[red]Error:[/red] Column '{col_name}' not found. Available: {reader.fieldnames}"
+            )
             raise typer.Exit(1)
         return [row[col_name].strip() for row in reader if row.get(col_name, "").strip()]
 
@@ -189,30 +196,71 @@ def _read_ids_from_file(file: Path, col: str | None) -> list[str]:
 
 def _emit_batch_tsv(results: list[dict]) -> None:
     writer = csv.writer(sys.stdout, delimiter="\t")
-    writer.writerow(["query", "query_type", "matched", "record_id", "title", "journal",
-                     "retraction_nature", "reason", "retraction_date",
-                     "original_paper_doi", "retraction_doi",
-                     "original_paper_pmid", "retraction_pmid"])
+    writer.writerow(
+        [
+            "query",
+            "query_type",
+            "matched",
+            "record_id",
+            "title",
+            "journal",
+            "retraction_nature",
+            "reason",
+            "retraction_date",
+            "original_paper_doi",
+            "retraction_doi",
+            "original_paper_pmid",
+            "retraction_pmid",
+        ]
+    )
     for r in results:
         if r["matched"]:
             for m in r["matches"]:
-                writer.writerow([
-                    r["query"], r.get("query_type", "doi"), True,
-                    m.get("record_id"), m.get("title"), m.get("journal"),
-                    m.get("retraction_nature"), m.get("reason"), m.get("retraction_date"),
-                    m.get("original_paper_doi"), m.get("retraction_doi"),
-                    m.get("original_paper_pmid"), m.get("retraction_pmid"),
-                ])
+                writer.writerow(
+                    [
+                        r["query"],
+                        r.get("query_type", "doi"),
+                        True,
+                        m.get("record_id"),
+                        m.get("title"),
+                        m.get("journal"),
+                        m.get("retraction_nature"),
+                        m.get("reason"),
+                        m.get("retraction_date"),
+                        m.get("original_paper_doi"),
+                        m.get("retraction_doi"),
+                        m.get("original_paper_pmid"),
+                        m.get("retraction_pmid"),
+                    ]
+                )
         else:
-            writer.writerow([r["query"], r.get("query_type", "doi"), False,
-                             "", "", "", "", "", "", "", "", "", ""])
+            writer.writerow(
+                [
+                    r["query"],
+                    r.get("query_type", "doi"),
+                    False,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                ]
+            )
 
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def doi(
-    doi_str: Annotated[str, typer.Argument(metavar="DOI", help="DOI to check (with or without prefix).")],
+    doi_str: Annotated[
+        str, typer.Argument(metavar="DOI", help="DOI to check (with or without prefix).")
+    ],
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Output raw JSON.")] = False,
@@ -220,6 +268,7 @@ def doi(
     """Check whether a single DOI appears in the Retraction Watch dataset."""
     if api:
         import urllib.parse
+
         encoded = urllib.parse.quote(normalize_doi(doi_str) or doi_str, safe="")
         data = _api_get(api, f"api/v1/check/doi/{encoded}")
         _print_matches(doi_str, data["matched"], data["matches"], data["meta"], as_json)
@@ -255,7 +304,9 @@ def pmid(
 
 @app.command()
 def title(
-    query: Annotated[str, typer.Argument(metavar="TITLE", help="Exact title to search (case-insensitive).")],
+    query: Annotated[
+        str, typer.Argument(metavar="TITLE", help="Exact title to search (case-insensitive).")
+    ],
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Output raw JSON.")] = False,
@@ -268,6 +319,7 @@ def title(
     """
     if api:
         import urllib.parse
+
         encoded = urllib.parse.quote(query, safe="")
         data = _api_get(api, f"api/v1/check/title/{encoded}")
         matches = data.get("matches", [])
@@ -281,17 +333,28 @@ def title(
         matches = query_by_title(conn, query)
         matched = bool(matches)
         if as_json:
-            out_console.print_json(json.dumps({
-                "query": query, "match_type": "title",
-                "matched": matched, "matches": matches, "meta": meta,
-            }))
+            out_console.print_json(
+                json.dumps(
+                    {
+                        "query": query,
+                        "match_type": "title",
+                        "matched": matched,
+                        "matches": matches,
+                        "meta": meta,
+                    }
+                )
+            )
             return
 
     if not matched:
-        rprint(f"[bold green]NOT FOUND[/bold green]  query=[cyan]{query}[/cyan]  (no retraction records)")
+        rprint(
+            f"[bold green]NOT FOUND[/bold green]  query=[cyan]{query}[/cyan]  (no retraction records)"
+        )
         return
 
-    rprint(f"[bold red]RETRACTED[/bold red]  query=[cyan]{query}[/cyan]  ({len(matches)} record(s))")
+    rprint(
+        f"[bold red]RETRACTED[/bold red]  query=[cyan]{query}[/cyan]  ({len(matches)} record(s))"
+    )
     rprint("[yellow]  ⚠ Title match — verify with DOI or PMID.[/yellow]")
     for m in matches:
         _print_match_table(m)
@@ -310,10 +373,15 @@ def batch_doi(
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     out: Annotated[OutFormat, typer.Option("--out", help="Output format.")] = OutFormat.table,
-    col: Annotated[str | None, typer.Option("--col", help="CSV column name containing DOIs.")] = None,
+    col: Annotated[
+        str | None, typer.Option("--col", help="CSV column name containing DOIs.")
+    ] = None,
     report_dir: Annotated[
         Path | None,
-        typer.Option("--report-dir", help="Directory to write report files (default: same dir as input file)."),
+        typer.Option(
+            "--report-dir",
+            help="Directory to write report files (default: same dir as input file).",
+        ),
     ] = None,
 ) -> None:
     """Batch-check DOIs from a plain-text file (one per line) or a CSV/TSV file.
@@ -356,7 +424,9 @@ def batch_doi(
             rprint(f"  {flag}  {r['query']}")
             if r["matched"]:
                 for m in r["matches"]:
-                    rprint(f"         → {m.get('retraction_nature')} | {m.get('journal')} | {m.get('retraction_date')}")
+                    rprint(
+                        f"         → {m.get('retraction_nature')} | {m.get('journal')} | {m.get('retraction_date')}"
+                    )
         rprint(
             f"\n[dim]Dataset: {meta.get('dataset_version', 'n/a')} | "
             f"rows={meta.get('row_count', 'n/a')} | built={meta.get('built_at', 'n/a')}[/dim]"
@@ -377,10 +447,15 @@ def batch_pmid(
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     out: Annotated[OutFormat, typer.Option("--out", help="Output format.")] = OutFormat.table,
-    col: Annotated[str | None, typer.Option("--col", help="CSV column name containing PMIDs.")] = None,
+    col: Annotated[
+        str | None, typer.Option("--col", help="CSV column name containing PMIDs.")
+    ] = None,
     report_dir: Annotated[
         Path | None,
-        typer.Option("--report-dir", help="Directory to write report files (default: same dir as input file)."),
+        typer.Option(
+            "--report-dir",
+            help="Directory to write report files (default: same dir as input file).",
+        ),
     ] = None,
 ) -> None:
     """Batch-check PMIDs from a plain-text file or a CSV/TSV file.
@@ -442,7 +517,9 @@ def batch_bib(
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     report_dir: Annotated[
         Path | None,
-        typer.Option("--report-dir", help="Directory to write report files (default: same dir as .bib)."),
+        typer.Option(
+            "--report-dir", help="Directory to write report files (default: same dir as .bib)."
+        ),
     ] = None,
 ) -> None:
     """Parse a BibTeX file and check every reference against Retraction Watch.
@@ -474,7 +551,7 @@ def batch_bib(
     console.print(f"[dim]Found {len(entries)} entries.[/dim]")
 
     # ── Collect unique DOIs and PMIDs for batch lookup ────────────────────────
-    doi_map: dict[str, list[int]] = {}   # normalised_doi → [entry indices]
+    doi_map: dict[str, list[int]] = {}  # normalised_doi → [entry indices]
     pmid_map: dict[int, list[int]] = {}  # pmid → [entry indices]
 
     for idx, entry in enumerate(entries):
@@ -525,7 +602,9 @@ def batch_bib(
 
     from rich.table import Table
 
-    summary = Table(title="Retraction Watch — BibTeX report", box=None, show_header=False, padding=(0, 2))
+    summary = Table(
+        title="Retraction Watch — BibTeX report", box=None, show_header=False, padding=(0, 2)
+    )
     summary.add_column(style="bold")
     summary.add_column()
     summary.add_row("Total references", str(len(bib_results)))
@@ -590,7 +669,9 @@ def _batch_bib_via_api(
 def update(
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     url: Annotated[str, typer.Option("--url", help="URL of Retraction Watch CSV.")] = _DEFAULT_URL,
-    force: Annotated[bool, typer.Option("--force", help="Rebuild even if dataset is unchanged.")] = False,
+    force: Annotated[
+        bool, typer.Option("--force", help="Rebuild even if dataset is unchanged.")
+    ] = False,
 ) -> None:
     """Download the latest Retraction Watch CSV and rebuild the local database.
 

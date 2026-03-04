@@ -15,6 +15,7 @@ FIXTURE_CSV = Path(__file__).parent / "fixtures" / "sample.csv"
 
 # ── doi command ───────────────────────────────────────────────────────────────
 
+
 def test_doi_hit(sample_db: Path) -> None:
     result = runner.invoke(app, ["doi", "10.9999/jmat.2020.001234", "--db", str(sample_db)])
     assert result.exit_code == 0
@@ -54,6 +55,7 @@ def test_doi_missing_db() -> None:
 
 # ── pmid command ──────────────────────────────────────────────────────────────
 
+
 def test_pmid_hit(sample_db: Path) -> None:
     result = runner.invoke(app, ["pmid", "12345678", "--db", str(sample_db)])
     assert result.exit_code == 0
@@ -73,12 +75,11 @@ def test_pmid_invalid(sample_db: Path) -> None:
 
 # ── batch-doi command ─────────────────────────────────────────────────────────
 
+
 def test_batch_doi_text_file(sample_db: Path, tmp_path: Path) -> None:
     doi_file = tmp_path / "dois.txt"
     doi_file.write_text(
-        "10.9999/jmat.2020.001234\n"
-        "10.8888/chem.2019.056789\n"
-        "10.0000/does.not.exist\n"
+        "10.9999/jmat.2020.001234\n10.8888/chem.2019.056789\n10.0000/does.not.exist\n"
     )
     result = runner.invoke(app, ["batch-doi", str(doi_file), "--db", str(sample_db)])
     assert result.exit_code == 0
@@ -93,7 +94,7 @@ def test_batch_doi_json_out(sample_db: Path, tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     # Strip any stray status lines before the JSON block
-    json_text = result.output[result.output.index("{"):]
+    json_text = result.output[result.output.index("{") :]
     data = json.loads(json_text)
     assert len(data["results"]) == 2
 
@@ -124,13 +125,12 @@ def test_batch_doi_csv_file(sample_db: Path, tmp_path: Path) -> None:
 
 
 def test_batch_doi_missing_file(sample_db: Path) -> None:
-    result = runner.invoke(
-        app, ["batch-doi", "/nonexistent/file.txt", "--db", str(sample_db)]
-    )
+    result = runner.invoke(app, ["batch-doi", "/nonexistent/file.txt", "--db", str(sample_db)])
     assert result.exit_code != 0
 
 
 # ── version flag ──────────────────────────────────────────────────────────────
+
 
 def test_version_flag() -> None:
     result = runner.invoke(app, ["--version"])

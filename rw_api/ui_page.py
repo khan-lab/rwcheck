@@ -1,4 +1,5 @@
 """NiceGUI landing page for rwcheck — mounted inside the FastAPI app."""
+
 from __future__ import annotations
 
 import json as _json
@@ -28,7 +29,6 @@ from rwcheck.db import (
     query_by_doi,
     query_by_pmid,
     query_by_title,
-    query_batch,
     search_records,
 )
 from rwcheck.report import BibResult, write_reports
@@ -79,8 +79,10 @@ _SAMPLE_BIB: Path | None = next(
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def _esc(text: str | None) -> str:
     import html
+
     return html.escape(str(text)) if text else ""
 
 
@@ -110,6 +112,7 @@ def _fmt_match(m: dict[str, Any]) -> str:
 
 
 # ── Core .bib processing (shared by upload handler and "Try example" button) ───
+
 
 async def _run_bib_check(content: bytes, fname: str, result_col: Any) -> None:
     """Process raw .bib bytes, write reports, and render results into result_col."""
@@ -152,11 +155,15 @@ async def _run_bib_check(content: bytes, fname: str, result_col: Any) -> None:
             report_dir = _REPORTS_DIR / report_id
             report_dir.mkdir(parents=True)
             write_reports(results, _cached_meta(), tmp_path, report_dir=report_dir)
-            (report_dir / "meta.json").write_text(_json.dumps({
-                "filename": fname,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "report_id": report_id,
-            }))
+            (report_dir / "meta.json").write_text(
+                _json.dumps(
+                    {
+                        "filename": fname,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "report_id": report_id,
+                    }
+                )
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -190,23 +197,24 @@ async def _run_bib_check(content: bytes, fname: str, result_col: Any) -> None:
                         + (
                             f'<br>DOI: <a href="https://doi.org/{_esc(doi)}" '
                             f'target="_blank" style="color:#2980b9">{_esc(doi)}</a>'
-                            if doi else ""
+                            if doi
+                            else ""
                         )
                         + "</div>"
                     )
 
             # Summary line
             if retracted == 0:
-                ui.html(f'<div class="bib-ok w-full">✓ <b>No retractions found</b> — {summary}</div>')
+                ui.html(
+                    f'<div class="bib-ok w-full">✓ <b>No retractions found</b> — {summary}</div>'
+                )
             else:
                 ui.label(summary).classes("text-sm text-gray-500 mt-1 w-full")
 
             # ── Action bar ────────────────────────────────────────────────────
             action_row = ui.row().classes("w-full gap-2 items-center mt-3 flex-wrap")
             with action_row:
-                _btn_cls = (
-                    "text-white px-3 py-1 rounded no-underline text-sm"
-                )
+                _btn_cls = "text-white px-3 py-1 rounded no-underline text-sm"
                 ui.link(
                     "⬇ Download ZIP",
                     f"/api/v1/reports/{report_id}/zip",
@@ -222,19 +230,21 @@ async def _run_bib_check(content: bytes, fname: str, result_col: Any) -> None:
                 share_url = f"{_PUBLIC_HOST}/api/v1/reports/{report_id}/html"
 
                 async def _copy_link(url: str = share_url) -> None:
-                    await ui.run_javascript(
-                        f"navigator.clipboard.writeText({_json.dumps(url)})"
-                    )
+                    await ui.run_javascript(f"navigator.clipboard.writeText({_json.dumps(url)})")
                     ui.notify("Share link copied!", type="positive")
 
-                ui.button("🔗 Copy share link", on_click=_copy_link).props("flat").classes("text-sm")
+                ui.button("🔗 Copy share link", on_click=_copy_link).props("flat").classes(
+                    "text-sm"
+                )
 
                 def _delete(rid: str = report_id, row: Any = action_row) -> None:
                     shutil.rmtree(_REPORTS_DIR / rid, ignore_errors=True)
                     row.delete()
                     ui.notify("Report deleted from server.", type="warning")
 
-                ui.button("🗑 Delete", color="red", on_click=_delete).props("flat").classes("text-sm")
+                ui.button("🗑 Delete", color="red", on_click=_delete).props("flat").classes(
+                    "text-sm"
+                )
 
     except Exception as exc:  # noqa: BLE001
         result_col.clear()
@@ -243,6 +253,7 @@ async def _run_bib_check(content: bytes, fname: str, result_col: Any) -> None:
 
 
 # ── Page definition ────────────────────────────────────────────────────────────
+
 
 @ui.page("/")
 async def index() -> None:
@@ -255,17 +266,24 @@ async def index() -> None:
     # ── Header / nav ──────────────────────────────────────────────────────────
     with ui.header().classes("bg-[#F3F4F6] px-6 py-3 flex items-center gap-6"):
         if _LOGO_DATA_URI:
-            ui.html(f'<a href="/"><img src="{_LOGO_DATA_URI}" style="height:34px;display:block;" alt="RWCheck"></a>')
+            ui.html(
+                f'<a href="/"><img src="{_LOGO_DATA_URI}" style="height:34px;display:block;" alt="RWCheck"></a>'
+            )
         else:
             ui.label("RWCheck").classes("text-xl font-bold")
         ui.space()
-        ui.link("REST API", "/docs", new_tab=True).classes("text-[#2c3e50] font-semibold no-underline hover:underline")
-        ui.link("CLI Docs", "https://khan-lab.github.io/rwcheck", new_tab=True).classes("text-[#2c3e50] font-semibold no-underline hover:underline")
-        ui.link("Source Code", "https://github.com/khan-lab/rwcheck", new_tab=True).classes("text-[#2c3e50] font-semibold no-underline hover:underline")
+        ui.link("REST API", "/docs", new_tab=True).classes(
+            "text-[#2c3e50] font-semibold no-underline hover:underline"
+        )
+        ui.link("CLI Docs", "https://khan-lab.github.io/rwcheck", new_tab=True).classes(
+            "text-[#2c3e50] font-semibold no-underline hover:underline"
+        )
+        ui.link("Source Code", "https://github.com/khan-lab/rwcheck", new_tab=True).classes(
+            "text-[#2c3e50] font-semibold no-underline hover:underline"
+        )
 
     # ── Main content ──────────────────────────────────────────────────────────
     with ui.column().classes("w-full max-w-4xl mx-auto px-4 py-6 gap-6"):
-
         # ── Hero ──────────────────────────────────────────────────────────────
         with ui.element("div").classes("rw-hero"):
             ui.html("<h1>Catch retracted papers before they land in your citations </h1>")
@@ -277,7 +295,9 @@ async def index() -> None:
             if db_ok:
                 built = meta.get("built_at", "")[:10] or "—"
                 rows = int(meta.get("row_count", 0))
-                ui.label(f"Database last updated: {built} · {rows:,} records").classes("text-xs text-gray-400 mt-1")
+                ui.label(f"Database last updated: {built} · {rows:,} records").classes(
+                    "text-xs text-gray-400 mt-1"
+                )
 
         # ── BibTeX upload ─────────────────────────────────────────────────────
         with ui.card().classes("w-full"):
@@ -300,6 +320,7 @@ async def index() -> None:
             ).props('accept=".bib" flat bordered').classes("w-full")
 
             if _SAMPLE_BIB:
+
                 async def _try_example() -> None:
                     await _run_bib_check(_SAMPLE_BIB.read_bytes(), "sample.bib", bib_result)
 
@@ -317,8 +338,8 @@ async def index() -> None:
             ).classes("text-sm text-gray-500 mb-2")
 
             _placeholders = {
-                "DOI":   "e.g. 10.1038/nature12345",
-                "PMID":  "e.g. 12345678",
+                "DOI": "e.g. 10.1038/nature12345",
+                "PMID": "e.g. 12345678",
                 "Title": "e.g. Climate model validation study",
             }
             mode = ui.radio(["DOI", "PMID", "Title"], value="DOI").props("inline")
@@ -345,13 +366,16 @@ async def index() -> None:
                     if m_val == "DOI":
                         # strip doi.org prefix
                         import re
+
                         q = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", q)
                         from rwcheck.normalize import normalize_doi
+
                         doi = normalize_doi(q)
                         rows = query_by_doi(conn, doi) if doi else []
                         label = f"DOI: {q}"
                     elif m_val == "PMID":
                         from rwcheck.normalize import normalize_pmid
+
                         pmid = normalize_pmid(q)
                         rows = query_by_pmid(conn, pmid) if pmid else []
                         label = f"PMID: {q}"
@@ -412,18 +436,26 @@ async def index() -> None:
                 ui.label("Retractions per Year").classes("text-base font-bold mb-2")
                 labels = [str(r[0]) for r in by_year]
                 counts = [r[1] for r in by_year]
-                ui.echart({
-                    "tooltip": {"trigger": "axis"},
-                    "xAxis": {"type": "category", "data": labels},
-                    "yAxis": {"type": "value"},
-                    "series": [{
-                        "type": "bar",
-                        "data": counts,
-                        "itemStyle": {"color": "#c0392b88", "borderColor": "#c0392b", "borderWidth": 1},
-                        "name": "Retractions",
-                    }],
-                    "grid": {"left": "5%", "right": "2%", "bottom": "5%", "containLabel": True},
-                }).classes("w-full h-72")
+                ui.echart(
+                    {
+                        "tooltip": {"trigger": "axis"},
+                        "xAxis": {"type": "category", "data": labels},
+                        "yAxis": {"type": "value"},
+                        "series": [
+                            {
+                                "type": "bar",
+                                "data": counts,
+                                "itemStyle": {
+                                    "color": "#c0392b88",
+                                    "borderColor": "#c0392b",
+                                    "borderWidth": 1,
+                                },
+                                "name": "Retractions",
+                            }
+                        ],
+                        "grid": {"left": "5%", "right": "2%", "bottom": "5%", "containLabel": True},
+                    }
+                ).classes("w-full h-72")
 
         # ── Retractions by country (Plotly choropleth) ────────────────────────
         raw_by_country: list[list] = stats.get("by_country", []) if db_ok else []
@@ -437,14 +469,16 @@ async def index() -> None:
         if iso3_locs:
             with ui.card().classes("w-full"):
                 ui.label("Retractions by Country").classes("text-base font-bold mb-2")
-                fig = go.Figure(go.Choropleth(
-                    locations=iso3_locs,
-                    z=iso3_counts,
-                    locationmode="ISO-3",
-                    colorscale=[[0, "#fff5f5"], [0.3, "#e74c3c"], [1, "#641e16"]],
-                    colorbar={"title": {"text": "Retractions"}, "thickness": 14, "len": 0.6},
-                    hovertemplate="<b>%{location}</b><br>%{z:,} retractions<extra></extra>",
-                ))
+                fig = go.Figure(
+                    go.Choropleth(
+                        locations=iso3_locs,
+                        z=iso3_counts,
+                        locationmode="ISO-3",
+                        colorscale=[[0, "#fff5f5"], [0.3, "#e74c3c"], [1, "#641e16"]],
+                        colorbar={"title": {"text": "Retractions"}, "thickness": 14, "len": 0.6},
+                        hovertemplate="<b>%{location}</b><br>%{z:,} retractions<extra></extra>",
+                    )
+                )
                 fig.update_layout(
                     margin={"l": 0, "r": 0, "t": 10, "b": 0},
                     paper_bgcolor="#fff",
@@ -468,22 +502,24 @@ async def index() -> None:
             ).classes("text-sm text-gray-500 mb-2")
 
             with ui.row().classes("w-full gap-2 flex-wrap"):
-                journal_in  = ui.input(placeholder="Journal (exact)").classes("flex-1 min-w-[180px]")
-                author_in   = ui.input(placeholder="Author (partial)").classes("flex-1 min-w-[180px]")
-                country_in  = ui.input(placeholder="Country (partial)").classes("flex-1 min-w-[160px]")
-                reason_in   = ui.input(placeholder="Reason (partial)").classes("flex-1 min-w-[160px]")
-                year_in     = ui.input(placeholder="Year (e.g. 2020)").classes("w-28")
+                journal_in = ui.input(placeholder="Journal (exact)").classes("flex-1 min-w-[180px]")
+                author_in = ui.input(placeholder="Author (partial)").classes("flex-1 min-w-[180px]")
+                country_in = ui.input(placeholder="Country (partial)").classes(
+                    "flex-1 min-w-[160px]"
+                )
+                reason_in = ui.input(placeholder="Reason (partial)").classes("flex-1 min-w-[160px]")
+                year_in = ui.input(placeholder="Year (e.g. 2020)").classes("w-28")
 
             search_btn = ui.button("Search", color="blue").classes("mt-1")
             search_result = ui.column().classes("w-full mt-2 gap-1")
 
             async def do_search() -> None:
                 filters = {
-                    "journal":  journal_in.value.strip() or None,
-                    "author":   author_in.value.strip() or None,
-                    "country":  country_in.value.strip() or None,
-                    "reason":   reason_in.value.strip() or None,
-                    "year":     int(year_in.value.strip()) if year_in.value.strip().isdigit() else None,
+                    "journal": journal_in.value.strip() or None,
+                    "author": author_in.value.strip() or None,
+                    "country": country_in.value.strip() or None,
+                    "reason": reason_in.value.strip() or None,
+                    "year": int(year_in.value.strip()) if year_in.value.strip().isdigit() else None,
                 }
                 if all(v is None for v in filters.values()):
                     ui.notify("Enter at least one filter", type="warning")
@@ -496,28 +532,51 @@ async def index() -> None:
                     total_found, records = search_records(conn, limit=100, offset=0, **filters)
                     search_result.clear()
                     with search_result:
-                        ui.label(f"{total_found:,} results (showing up to 100)").classes("text-sm text-gray-500 w-full")
+                        ui.label(f"{total_found:,} results (showing up to 100)").classes(
+                            "text-sm text-gray-500 w-full"
+                        )
                         cols = [
-                            {"name": "title",   "label": "Title",   "field": "title",   "align": "left"},
-                            {"name": "journal", "label": "Journal", "field": "journal", "align": "left"},
-                            {"name": "nature",  "label": "Nature",  "field": "nature",  "align": "left"},
-                            {"name": "date",    "label": "Date",    "field": "date",    "align": "left"},
-                            {"name": "reason",  "label": "Reason",  "field": "reason",  "align": "left"},
-                            {"name": "doi",     "label": "DOI",     "field": "doi",     "align": "left"},
+                            {"name": "title", "label": "Title", "field": "title", "align": "left"},
+                            {
+                                "name": "journal",
+                                "label": "Journal",
+                                "field": "journal",
+                                "align": "left",
+                            },
+                            {
+                                "name": "nature",
+                                "label": "Nature",
+                                "field": "nature",
+                                "align": "left",
+                            },
+                            {"name": "date", "label": "Date", "field": "date", "align": "left"},
+                            {
+                                "name": "reason",
+                                "label": "Reason",
+                                "field": "reason",
+                                "align": "left",
+                            },
+                            {"name": "doi", "label": "DOI", "field": "doi", "align": "left"},
                         ]
                         rows_data = [
                             {
-                                "title":   r.get("title") or "",
+                                "title": r.get("title") or "",
                                 "journal": r.get("journal") or "",
-                                "nature":  r.get("retraction_nature") or "",
-                                "date":    str(r.get("retraction_date") or "")[:10],
-                                "reason":  r.get("reason") or "",
-                                "doi":     r.get("original_paper_doi_raw") or r.get("original_paper_doi") or "",
+                                "nature": r.get("retraction_nature") or "",
+                                "date": str(r.get("retraction_date") or "")[:10],
+                                "reason": r.get("reason") or "",
+                                "doi": r.get("original_paper_doi_raw")
+                                or r.get("original_paper_doi")
+                                or "",
                             }
                             for r in records
                         ]
-                        tbl = ui.table(columns=cols, rows=rows_data, row_key="title").classes("w-full text-sm")
-                        tbl.add_slot("body-cell-doi", """
+                        tbl = ui.table(columns=cols, rows=rows_data, row_key="title").classes(
+                            "w-full text-sm"
+                        )
+                        tbl.add_slot(
+                            "body-cell-doi",
+                            """
                             <q-td :props="props">
                               <a v-if="props.value"
                                  :href="'https://doi.org/' + props.value"
@@ -527,7 +586,8 @@ async def index() -> None:
                               </a>
                               <span v-else style="color:#aaa">—</span>
                             </q-td>
-                        """)
+                        """,
+                        )
                 except Exception as exc:  # noqa: BLE001
                     search_result.clear()
                     with search_result:
@@ -541,27 +601,32 @@ async def index() -> None:
             "REST API": [
                 ("Check a DOI (curl)", f"curl '{_host}/check/doi/10.1038/nature12345'"),
                 ("Check a PMID (curl)", f"curl '{_host}/check/pmid/12345678'"),
-                ("Batch lookup (curl)",
-                 f"curl -X POST {_host}/check/batch \\\n"
-                 "  -H 'Content-Type: application/json' \\\n"
-                 "  -d '{\"dois\":[\"10.1038/nature12345\"],\"pmids\":[12345678]}'"),
+                (
+                    "Batch lookup (curl)",
+                    f"curl -X POST {_host}/check/batch \\\n"
+                    "  -H 'Content-Type: application/json' \\\n"
+                    '  -d \'{"dois":["10.1038/nature12345"],"pmids":[12345678]}\'',
+                ),
             ],
             "CLI": [
                 ("Install", "pip install rwcheck"),
-                ("Check a DOI or PMID",
-                 "rwcheck doi 10.1038/nature12345\nrwcheck pmid 12345678"),
-                ("Check a BibTeX file",
-                 "rwcheck batch-bib refs.bib    # writes refs_rwcheck.{md,json,html}"),
+                ("Check a DOI or PMID", "rwcheck doi 10.1038/nature12345\nrwcheck pmid 12345678"),
+                (
+                    "Check a BibTeX file",
+                    "rwcheck batch-bib refs.bib    # writes refs_rwcheck.{md,json,html}",
+                ),
                 ("Update the local database", "rwcheck update"),
             ],
             "Python API": [
                 ("Install", "pip install rwcheck"),
-                ("DOI lookup",
-                 "from rwcheck import check_doi\n"
-                 "result = check_doi('10.1038/nature12345', db_path='data/rw.sqlite')\n"
-                 "if result['matched']:\n"
-                 "    m = result['matches'][0]\n"
-                 "    print(m['retraction_nature'], m['retraction_date'])"),
+                (
+                    "DOI lookup",
+                    "from rwcheck import check_doi\n"
+                    "result = check_doi('10.1038/nature12345', db_path='data/rw.sqlite')\n"
+                    "if result['matched']:\n"
+                    "    m = result['matches'][0]\n"
+                    "    print(m['retraction_nature'], m['retraction_date'])",
+                ),
             ],
         }
         with ui.card().classes("w-full"):
@@ -595,6 +660,6 @@ async def index() -> None:
             ui.label(f"Dataset version {v} · {rows:,} records · ")
         ui.html(
             '<p> <b>RW</b>Check is open source software built by the <a href="https://khan-lab.github.io" target="_blank">'
-            '<b>Khan Lab</b></a> and powered by the <a href="https://retractionwatch.com/" class="underline">Retraction Watch</a> ' \
+            '<b>Khan Lab</b></a> and powered by the <a href="https://retractionwatch.com/" class="underline">Retraction Watch</a> '
             'dataset made publically available by <a href="https://gitlab.com/crossref/retraction-watch-data" class="underline">CrossRef</a>.</p>'
         )

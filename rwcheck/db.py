@@ -73,6 +73,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
         Keys: ``total_records``, ``total_journals``, ``total_countries``,
         ``doi_coverage``, ``pmid_coverage``, ``by_year``, ``top_journals``.
     """
+
     def scalar(sql: str) -> int:
         # row_factory returns dicts; use a named alias 'n' for all scalar queries.
         row = conn.execute(sql).fetchone()
@@ -86,8 +87,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
     # Aggregate per distinct multi-country string first, then split and accumulate counts
     # per individual country — one query handles both total_countries and by_country.
     country_agg_rows = conn.execute(
-        "SELECT country, COUNT(*) AS n FROM retractions "
-        "WHERE country IS NOT NULL GROUP BY country"
+        "SELECT country, COUNT(*) AS n FROM retractions WHERE country IS NOT NULL GROUP BY country"
     ).fetchall()
     country_counts: dict[str, int] = {}
     for row in country_agg_rows:
@@ -100,8 +100,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
 
     # The 'author' column stores semicolon-separated names (e.g. "Smith, J;Jones, A").
     author_agg_rows = conn.execute(
-        "SELECT author, COUNT(*) AS n FROM retractions "
-        "WHERE author IS NOT NULL GROUP BY author"
+        "SELECT author, COUNT(*) AS n FROM retractions WHERE author IS NOT NULL GROUP BY author"
     ).fetchall()
     author_counts: dict[str, int] = {}
     for row in author_agg_rows:
@@ -111,12 +110,8 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
                 author_counts[a] = author_counts.get(a, 0) + row["n"]
     authors = len(author_counts)
 
-    doi_cov = scalar(
-        "SELECT COUNT(*) AS n FROM retractions WHERE original_paper_doi IS NOT NULL"
-    )
-    pmid_cov = scalar(
-        "SELECT COUNT(*) AS n FROM retractions WHERE original_paper_pmid IS NOT NULL"
-    )
+    doi_cov = scalar("SELECT COUNT(*) AS n FROM retractions WHERE original_paper_doi IS NOT NULL")
+    pmid_cov = scalar("SELECT COUNT(*) AS n FROM retractions WHERE original_paper_pmid IS NOT NULL")
 
     by_year_rows = conn.execute(
         "SELECT SUBSTR(retraction_date,1,4) AS yr, COUNT(*) AS n "
@@ -145,6 +140,7 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
 
 
 # ── Private helpers ────────────────────────────────────────────────────────────
+
 
 def _row_to_summary(row: dict[str, Any]) -> dict[str, Any]:
     """Trim a full DB row to the fields returned in API/CLI output."""
@@ -181,6 +177,7 @@ _SELECT = """
 
 
 # ── Public query API ───────────────────────────────────────────────────────────
+
 
 def query_by_doi(conn: sqlite3.Connection, doi: str) -> list[dict[str, Any]]:
     """Look up records by DOI (normalised exact match).
@@ -358,9 +355,9 @@ def search_records(
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-    total: int = conn.execute(
-        f"SELECT COUNT(*) AS n FROM retractions {where}", params
-    ).fetchone()["n"]
+    total: int = conn.execute(f"SELECT COUNT(*) AS n FROM retractions {where}", params).fetchone()[
+        "n"
+    ]
 
     rows = conn.execute(
         f"{_SELECT} {where} ORDER BY retraction_date DESC LIMIT ? OFFSET ?",

@@ -21,6 +21,7 @@ from rwcheck.normalize import normalize_doi
 
 # ── Logo (base64 data URI for self-contained HTML output) ─────────────────────
 
+
 def _load_logo() -> str:
     logo = Path(__file__).parent.parent / "rwcheck_logo.png"
     if not logo.exists():
@@ -66,6 +67,7 @@ class BibResult:
 
 
 # ── JSON report ───────────────────────────────────────────────────────────────
+
 
 def generate_json_report(
     results: list[BibResult],
@@ -119,6 +121,7 @@ def generate_json_report(
 
 
 # ── Markdown report ───────────────────────────────────────────────────────────
+
 
 def _md_escape(text: str | None) -> str:
     """Escape pipe characters for use inside Markdown table cells."""
@@ -196,7 +199,9 @@ def generate_md_report(
                 a(f"| **Reason** | {_md_escape(m.get('reason'))} |")
                 a(f"| **Retraction date** | {_md_escape(m.get('retraction_date'))} |")
                 if m.get("retraction_doi_raw"):
-                    a(f"| **Retraction notice DOI** | `{_md_escape(m.get('retraction_doi_raw'))}` |")
+                    a(
+                        f"| **Retraction notice DOI** | `{_md_escape(m.get('retraction_doi_raw'))}` |"
+                    )
                 if m.get("retraction_pmid"):
                     a(f"| **Retraction PMID** | `{m.get('retraction_pmid')}` |")
                 a(f"| **Journal** | {_md_escape(m.get('journal'))} |")
@@ -221,7 +226,9 @@ def generate_md_report(
         a("|---|---|---|---|---|")
         for r in clean:
             e = r.entry
-            doi_cell = f"`{_md_escape(e.doi_raw)}`" if e.doi_raw else (f"PMID:{e.pmid}" if e.pmid else "—")
+            doi_cell = (
+                f"`{_md_escape(e.doi_raw)}`" if e.doi_raw else (f"PMID:{e.pmid}" if e.pmid else "—")
+            )
             a(
                 f"| {_md_escape(e.key)} "
                 f"| {_md_escape(e.short_author)} "
@@ -239,11 +246,7 @@ def generate_md_report(
         a("|---|---|---|")
         for r in unchecked:
             e = r.entry
-            a(
-                f"| {_md_escape(e.key)} "
-                f"| {_md_escape(e.entry_type)} "
-                f"| {_md_escape(e.title)} |"
-            )
+            a(f"| {_md_escape(e.key)} | {_md_escape(e.entry_type)} | {_md_escape(e.title)} |")
         a("")
 
     a("---")
@@ -361,6 +364,7 @@ footer a { color: #aaa; }
 }
 """
 
+
 def _h(text: str | None) -> str:
     """HTML-escape a value (returns empty string for None/empty)."""
     if not text:
@@ -423,10 +427,10 @@ def generate_html_report(
         w(f'<img src="{_LOGO_DATA_URI}" alt="rwcheck">')
     w(f"<h1>{title}</h1>")
     w('<div class="meta-bar">')
-    w(f'<span><b>Dataset version:</b> <code>{_h(meta.get("dataset_version", "n/a"))}</code></span>')
-    w(f'<span><b>Rows:</b> {row_count:,}</span>')
-    w(f'<span><b>Built:</b> {_h(meta.get("built_at", "n/a"))}</span>')
-    w(f'<span><b>Generated:</b> {_h(generated)}</span>')
+    w(f"<span><b>Dataset version:</b> <code>{_h(meta.get('dataset_version', 'n/a'))}</code></span>")
+    w(f"<span><b>Rows:</b> {row_count:,}</span>")
+    w(f"<span><b>Built:</b> {_h(meta.get('built_at', 'n/a'))}</span>")
+    w(f"<span><b>Generated:</b> {_h(generated)}</span>")
     w("</div></header>")
 
     # ── Summary cards ─────────────────────────────────────────────────────────
@@ -442,7 +446,7 @@ def generate_html_report(
 
     # ── Retracted section ─────────────────────────────────────────────────────
     w('<div class="section ret">')
-    w(f'<h2>⚠️ Retracted References ({len(retracted)})</h2>')
+    w(f"<h2>⚠️ Retracted References ({len(retracted)})</h2>")
     if retracted:
         for r in retracted:
             e = r.entry
@@ -461,19 +465,25 @@ def generate_html_report(
             if e.pmid:
                 w(f"<tr><td>PMID</td><td><code>{e.pmid}</code></td></tr>")
             for m in r.all_matches:
-                w(f'<tr><td>Nature</td><td>{_h(m.get("retraction_nature"))}</td></tr>')
-                w(f'<tr><td>Reason</td><td>{_h(m.get("reason"))}</td></tr>')
-                w(f'<tr><td>Retraction date</td><td>{_h(m.get("retraction_date"))}</td></tr>')
+                w(f"<tr><td>Nature</td><td>{_h(m.get('retraction_nature'))}</td></tr>")
+                w(f"<tr><td>Reason</td><td>{_h(m.get('reason'))}</td></tr>")
+                w(f"<tr><td>Retraction date</td><td>{_h(m.get('retraction_date'))}</td></tr>")
                 if m.get("retraction_doi_raw"):
-                    w(f'<tr><td>Retraction notice</td><td>{_doi_link(m.get("retraction_doi_raw"))}</td></tr>')
+                    w(
+                        f"<tr><td>Retraction notice</td><td>{_doi_link(m.get('retraction_doi_raw'))}</td></tr>"
+                    )
                 if m.get("retraction_pmid"):
-                    w(f'<tr><td>Retraction PMID</td><td><code>{m["retraction_pmid"]}</code></td></tr>')
-                w(f'<tr><td>Journal</td><td>{_h(m.get("journal"))}</td></tr>')
-                w(f'<tr><td>Paywalled</td><td>{_h(m.get("paywalled"))}</td></tr>')
+                    w(
+                        f"<tr><td>Retraction PMID</td><td><code>{m['retraction_pmid']}</code></td></tr>"
+                    )
+                w(f"<tr><td>Journal</td><td>{_h(m.get('journal'))}</td></tr>")
+                w(f"<tr><td>Paywalled</td><td>{_h(m.get('paywalled'))}</td></tr>")
                 break  # show first match in the table
             w("</table>")
             if len(r.all_matches) > 1:
-                w(f'<p class="multi-match-note">⚠ This entry matched <b>{len(r.all_matches)}</b> Retraction Watch records.</p>')
+                w(
+                    f'<p class="multi-match-note">⚠ This entry matched <b>{len(r.all_matches)}</b> Retraction Watch records.</p>'
+                )
             w("</div></details></div>")
     else:
         w('<p class="empty">No retracted references found.</p>')
@@ -481,10 +491,12 @@ def generate_html_report(
 
     # ── Clean section ─────────────────────────────────────────────────────────
     w('<div class="section clean">')
-    w(f'<h2>✓ Clean References ({len(clean)})</h2>')
+    w(f"<h2>✓ Clean References ({len(clean)})</h2>")
     if clean:
         w('<div class="data-table-wrap"><table class="data-table">')
-        w("<thead><tr><th>Key</th><th>Authors</th><th>Year</th><th>Journal</th><th>DOI / PMID</th></tr></thead>")
+        w(
+            "<thead><tr><th>Key</th><th>Authors</th><th>Year</th><th>Journal</th><th>DOI / PMID</th></tr></thead>"
+        )
         w("<tbody>")
         for r in clean:
             e = r.entry
@@ -510,7 +522,7 @@ def generate_html_report(
 
     # ── Unchecked section ─────────────────────────────────────────────────────
     w('<div class="section unchk">')
-    w(f'<h2>⬜ Unchecked — No DOI or PMID ({len(unchecked)})</h2>')
+    w(f"<h2>⬜ Unchecked — No DOI or PMID ({len(unchecked)})</h2>")
     if unchecked:
         w('<div class="data-table-wrap"><table class="data-table">')
         w("<thead><tr><th>Key</th><th>Type</th><th>Title</th></tr></thead>")
@@ -542,6 +554,7 @@ def generate_html_report(
 
 
 # ── File output ────────────────────────────────────────────────────────────────
+
 
 def write_reports(
     results: list[BibResult],
@@ -576,20 +589,15 @@ def write_reports(
     md_path = out_dir / f"{stem}_rwcheck.md"
     html_path = out_dir / f"{stem}_rwcheck.html"
 
-    json_path.write_text(
-        generate_json_report(results, meta, input_path), encoding="utf-8"
-    )
-    md_path.write_text(
-        generate_md_report(results, meta, input_path), encoding="utf-8"
-    )
-    html_path.write_text(
-        generate_html_report(results, meta, input_path), encoding="utf-8"
-    )
+    json_path.write_text(generate_json_report(results, meta, input_path), encoding="utf-8")
+    md_path.write_text(generate_md_report(results, meta, input_path), encoding="utf-8")
+    html_path.write_text(generate_html_report(results, meta, input_path), encoding="utf-8")
 
     return json_path, md_path, html_path
 
 
 # ── Adapter for batch-doi / batch-pmid ────────────────────────────────────────
+
 
 def batch_results_to_bib_results(batch_results: list[dict[str, Any]]) -> list[BibResult]:
     """Convert :func:`~rwcheck.db.query_batch` output to :class:`BibResult` list.
@@ -604,7 +612,9 @@ def batch_results_to_bib_results(batch_results: list[dict[str, Any]]) -> list[Bi
         matches: list[dict[str, Any]] = item.get("matches", [])
         if item["query_type"] == "doi":
             doi_str = str(query)
-            entry = BibEntry(key=doi_str, entry_type="doi", doi=normalize_doi(doi_str), doi_raw=doi_str)
+            entry = BibEntry(
+                key=doi_str, entry_type="doi", doi=normalize_doi(doi_str), doi_raw=doi_str
+            )
             out.append(BibResult(entry=entry, doi_matches=matches))
         else:
             pmid_val = int(query) if str(query).lstrip("-").isdigit() else None

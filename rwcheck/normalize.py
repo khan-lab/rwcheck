@@ -45,7 +45,7 @@ def normalize_doi(raw: str | None) -> str | None:
     # Strip URL-style prefixes.
     for prefix in _DOI_URL_PREFIXES:
         if doi.startswith(prefix):
-            doi = doi[len(prefix):]
+            doi = doi[len(prefix) :]
             break
 
     # Strip bare "doi:" prefix.

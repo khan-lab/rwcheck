@@ -47,9 +47,7 @@ from rwcheck.normalize import normalize_doi, normalize_pmid
 console = Console(stderr=True)
 
 # Canonical source URL.
-DEFAULT_URL = (
-    "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
-)
+DEFAULT_URL = "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
 DEFAULT_DB = Path("data/rw.sqlite")
 DEFAULT_CACHED_CSV = Path("data/cached_rw.csv")
 
@@ -120,6 +118,7 @@ def _parse_date(raw: str) -> str | None:
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
 
+
 def _detect_delimiter(sample: str) -> str:
     """Return ',' or '\\t' based on which appears more in the first line."""
     first_line = sample.split("\n", 1)[0]
@@ -145,6 +144,7 @@ def _sha256_stream(stream: IO[bytes]) -> tuple[str, bytes]:
 
 
 # ── Download ───────────────────────────────────────────────────────────────────
+
 
 def _download_csv(url: str, dest: Path) -> str:
     """Download *url* to *dest*, return SHA-256 hex digest."""
@@ -177,15 +177,14 @@ def _download_csv(url: str, dest: Path) -> str:
 
 # ── Stored hash ────────────────────────────────────────────────────────────────
 
+
 def _get_stored_sha256(db_path: Path) -> str | None:
     """Return the ``csv_sha256`` stored in an existing DB, or None."""
     if not db_path.exists():
         return None
     try:
         conn = sqlite3.connect(str(db_path))
-        row = conn.execute(
-            "SELECT value FROM meta WHERE key='csv_sha256'"
-        ).fetchone()
+        row = conn.execute("SELECT value FROM meta WHERE key='csv_sha256'").fetchone()
         conn.close()
         return row[0] if row else None
     except Exception:  # noqa: BLE001
@@ -193,6 +192,7 @@ def _get_stored_sha256(db_path: Path) -> str | None:
 
 
 # ── Ingestion ──────────────────────────────────────────────────────────────────
+
 
 def _ingest(conn: sqlite3.Connection, csv_path: Path, source_url: str, sha256: str) -> int:
     """Read *csv_path*, populate the DB, write meta. Return row count."""
@@ -236,31 +236,33 @@ def _ingest(conn: sqlite3.Connection, csv_path: Path, source_url: str, sha256: s
             ret_doi_raw = raw.get("RetractionDOI", "").strip()
             orig_doi_raw = raw.get("OriginalPaperDOI", "").strip()
 
-            batch.append((
-                record_id,
-                raw.get("Title", "").strip() or None,
-                raw.get("Subject", "").strip() or None,
-                raw.get("Institution", "").strip() or None,
-                raw.get("Journal", "").strip() or None,
-                raw.get("Publisher", "").strip() or None,
-                raw.get("Country", "").strip() or None,
-                raw.get("Author", "").strip() or None,
-                raw.get("URLS", "").strip() or None,
-                raw.get("ArticleType", "").strip() or None,
-                _parse_date(raw.get("RetractionDate", "")),
-                normalize_doi(ret_doi_raw),
-                ret_doi_raw or None,
-                normalize_pmid(raw.get("RetractionPubMedID", "0")),
-                _parse_date(raw.get("OriginalPaperDate", "")),
-                normalize_doi(orig_doi_raw),
-                orig_doi_raw or None,
-                normalize_pmid(raw.get("OriginalPaperPubMedID", "0")),
-                raw.get("RetractionNature", "").strip() or None,
-                raw.get("Reason", "").strip() or None,
-                raw.get("Paywalled", "").strip() or None,
-                raw.get("Notes", "").strip() or None,
-                json.dumps(dict(raw), ensure_ascii=False),
-            ))
+            batch.append(
+                (
+                    record_id,
+                    raw.get("Title", "").strip() or None,
+                    raw.get("Subject", "").strip() or None,
+                    raw.get("Institution", "").strip() or None,
+                    raw.get("Journal", "").strip() or None,
+                    raw.get("Publisher", "").strip() or None,
+                    raw.get("Country", "").strip() or None,
+                    raw.get("Author", "").strip() or None,
+                    raw.get("URLS", "").strip() or None,
+                    raw.get("ArticleType", "").strip() or None,
+                    _parse_date(raw.get("RetractionDate", "")),
+                    normalize_doi(ret_doi_raw),
+                    ret_doi_raw or None,
+                    normalize_pmid(raw.get("RetractionPubMedID", "0")),
+                    _parse_date(raw.get("OriginalPaperDate", "")),
+                    normalize_doi(orig_doi_raw),
+                    orig_doi_raw or None,
+                    normalize_pmid(raw.get("OriginalPaperPubMedID", "0")),
+                    raw.get("RetractionNature", "").strip() or None,
+                    raw.get("Reason", "").strip() or None,
+                    raw.get("Paywalled", "").strip() or None,
+                    raw.get("Notes", "").strip() or None,
+                    json.dumps(dict(raw), ensure_ascii=False),
+                )
+            )
             row_count += 1
             progress.update(task, advance=1)
 
@@ -281,15 +283,14 @@ def _ingest(conn: sqlite3.Connection, csv_path: Path, source_url: str, sha256: s
         ("source_url", source_url),
         ("csv_sha256", sha256),
     ]
-    conn.executemany(
-        "INSERT OR REPLACE INTO meta (key, value) VALUES (?,?)", meta_rows
-    )
+    conn.executemany("INSERT OR REPLACE INTO meta (key, value) VALUES (?,?)", meta_rows)
     conn.commit()
 
     return row_count
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
+
 
 def build_db(
     csv_path: Path | str | None,
@@ -345,8 +346,7 @@ def build_db(
         stored = _get_stored_sha256(db_path)
         if stored and stored == sha256:
             console.print(
-                "[green]Dataset unchanged[/green] (SHA-256 matches). "
-                "Use --force to rebuild anyway."
+                "[green]Dataset unchanged[/green] (SHA-256 matches). Use --force to rebuild anyway."
             )
             return
 
@@ -374,6 +374,7 @@ def build_db(
 
 
 # ── CLI entry-point ────────────────────────────────────────────────────────────
+
 
 def main() -> None:  # pragma: no cover
     import argparse
