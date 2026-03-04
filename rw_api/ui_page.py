@@ -514,14 +514,13 @@ async def index() -> None:
             search_result = ui.column().classes("w-full mt-2 gap-1")
 
             async def do_search() -> None:
-                filters = {
-                    "journal": journal_in.value.strip() or None,
-                    "author": author_in.value.strip() or None,
-                    "country": country_in.value.strip() or None,
-                    "reason": reason_in.value.strip() or None,
-                    "year": int(year_in.value.strip()) if year_in.value.strip().isdigit() else None,
-                }
-                if all(v is None for v in filters.values()):
+                journal = journal_in.value.strip() or None
+                author = author_in.value.strip() or None
+                country = country_in.value.strip() or None
+                reason = reason_in.value.strip() or None
+                year_raw = year_in.value.strip()
+                year: int | None = int(year_raw) if year_raw.isdigit() else None
+                if not any([journal, author, country, reason, year]):
                     ui.notify("Enter at least one filter", type="warning")
                     return
                 search_result.clear()
@@ -529,7 +528,16 @@ async def index() -> None:
                     ui.spinner(size="sm")
                 try:
                     conn = _get_conn()
-                    total_found, records = search_records(conn, limit=100, offset=0, **filters)
+                    total_found, records = search_records(
+                        conn,
+                        limit=100,
+                        offset=0,
+                        journal=journal,
+                        author=author,
+                        country=country,
+                        reason=reason,
+                        year=year,
+                    )
                     search_result.clear()
                     with search_result:
                         ui.label(f"{total_found:,} results (showing up to 100)").classes(
