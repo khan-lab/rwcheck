@@ -41,7 +41,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   font-weight: 700;
   color: #2c3e50;
   margin: 0 0 6px;
-  line-height: 1.5; /* good default */
+  line-height: 1.2; /* good default */
 }
 
 /* Mobile: when it wraps, make it feel tighter */
@@ -272,13 +272,13 @@ async def index() -> None:
         else:
             ui.label("RWCheck").classes("text-xl font-bold")
         ui.space()
-        ui.link("REST API", "/docs", new_tab=True).classes(
+        ui.link("API", "/docs", new_tab=True).classes(
             "text-[#2c3e50] font-semibold no-underline hover:underline"
         )
-        ui.link("CLI Docs", "https://khan-lab.github.io/rwcheck", new_tab=True).classes(
+        ui.link("CLI", "https://khan-lab.github.io/rwcheck", new_tab=True).classes(
             "text-[#2c3e50] font-semibold no-underline hover:underline"
         )
-        ui.link("Source Code", "https://github.com/khan-lab/rwcheck", new_tab=True).classes(
+        ui.link("Code", "https://github.com/khan-lab/rwcheck", new_tab=True).classes(
             "text-[#2c3e50] font-semibold no-underline hover:underline"
         )
 
@@ -665,9 +665,9 @@ async def index() -> None:
         if db_ok and meta.get("dataset_version"):
             v = meta["dataset_version"]
             rows = int(meta.get("row_count", 0))
-            ui.label(f"Dataset version {v} · {rows:,} records · ")
+            #ui.label(f"Dataset version {v} · {rows:,} records · ")
         ui.html(
-            '<p> <b>RW</b>Check is open source software built by the <a href="https://khan-lab.github.io" target="_blank">'
+            '<p style="text-align:center;"><b>RW</b>Check is open source software built by the <a href="https://khan-lab.github.io" target="_blank">'
             '<b>Khan Lab</b></a> and powered by the <a href="https://retractionwatch.com/" class="underline">Retraction Watch</a> '
             'dataset made publically available by <a href="https://gitlab.com/crossref/retraction-watch-data" class="underline">CrossRef</a>.</p>'
         )
