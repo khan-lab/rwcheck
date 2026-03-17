@@ -126,6 +126,44 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
         "WHERE journal IS NOT NULL GROUP BY journal ORDER BY n DESC LIMIT 10"
     ).fetchall()
 
+    # ── total_by_nature ──────────────────────────────────────────────────────
+    nature_rows = conn.execute(
+        "SELECT retraction_nature, COUNT(*) AS n FROM retractions "
+        "WHERE retraction_nature IS NOT NULL GROUP BY retraction_nature ORDER BY n DESC"
+    ).fetchall()
+    total_by_nature = {r["retraction_nature"]: r["n"] for r in nature_rows}
+
+    # ── by_year_by_nature ────────────────────────────────────────────────────
+    by_year_nat_rows = conn.execute(
+        "SELECT SUBSTR(retraction_date,1,4) AS yr, retraction_nature, COUNT(*) AS n "
+        "FROM retractions "
+        "WHERE retraction_date IS NOT NULL AND LENGTH(retraction_date) >= 4 "
+        "  AND SUBSTR(retraction_date,1,4) GLOB '[12][0-9][0-9][0-9]' "
+        "GROUP BY yr, retraction_nature ORDER BY yr"
+    ).fetchall()
+    by_year_by_nature: dict[str, dict[str, int]] = {}
+    for r in by_year_nat_rows:
+        by_year_by_nature.setdefault(r["yr"], {})[r["retraction_nature"] or "Unknown"] = r["n"]
+
+    # ── by_country_by_nature ─────────────────────────────────────────────────
+    cn_rows = conn.execute(
+        "SELECT country, retraction_nature, COUNT(*) AS n "
+        "FROM retractions WHERE country IS NOT NULL "
+        "GROUP BY country, retraction_nature"
+    ).fetchall()
+    cn_counts: dict[str, dict[str, int]] = {}  # {nature: {country: count}}
+    for row in cn_rows:
+        nat = row["retraction_nature"] or "Unknown"
+        for part in row["country"].split(";"):
+            c = part.strip()
+            if c and c.lower() != "unknown":
+                cn_counts.setdefault(nat, {})
+                cn_counts[nat][c] = cn_counts[nat].get(c, 0) + row["n"]
+    by_country_by_nature = {
+        nat: sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        for nat, counts in cn_counts.items()
+    }
+
     return {
         "total_records": total,
         "total_journals": journals,
@@ -136,6 +174,12 @@ def get_stats(conn: sqlite3.Connection) -> dict[str, Any]:
         "by_year": [[r["yr"], r["n"]] for r in by_year_rows],
         "top_journals": [[r["journal"], r["n"]] for r in top_journal_rows],
         "by_country": [[name, count] for name, count in by_country],
+        "total_by_nature": total_by_nature,
+        "by_year_by_nature": by_year_by_nature,
+        "by_country_by_nature": {
+            nat: [[c, n] for c, n in pairs]
+            for nat, pairs in by_country_by_nature.items()
+        },
     }
 
 
@@ -162,6 +206,8 @@ def _row_to_summary(row: dict[str, Any]) -> dict[str, Any]:
         "paywalled": row["paywalled"],
         "urls": row["urls"],
         "country": row["country"],
+        "article_type": row["article_type"],
+        "subject": row["subject"],
     }
 
 
@@ -171,7 +217,8 @@ _SELECT = """
            retraction_doi, retraction_doi_raw,
            original_paper_doi, original_paper_doi_raw,
            original_paper_pmid, retraction_pmid,
-           paywalled, urls, country
+           paywalled, urls, country,
+           article_type, subject
     FROM retractions
 """
 
@@ -298,6 +345,8 @@ def search_records(
     year: int | None = None,
     published_year: int | None = None,
     reason: str | None = None,
+    nature: str | None = None,
+    article_type: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> tuple[int, list[dict[str, Any]]]:
@@ -309,7 +358,10 @@ def search_records(
         Open database connection.
     journal:
         Case-insensitive exact match.
-    country, author, publisher, reason:
+    nature:
+        Case-insensitive exact match on ``retraction_nature``
+        (e.g. ``"Retraction"``, ``"Expression of concern"``).
+    country, author, publisher, reason, article_type:
         Case-insensitive substring (LIKE) match.  ``country`` uses substring
         matching because the column stores semicolon-separated values
         (e.g. ``"China;United States"``).
@@ -328,18 +380,23 @@ def search_records(
     conditions: list[str] = []
     params: list[Any] = []
 
-    # Exact match (case-insensitive) for journal.
+    # Exact match (case-insensitive) for journal and retraction_nature.
     if journal:
         conditions.append("LOWER(journal) = LOWER(?)")
         params.append(journal)
 
+    if nature:
+        conditions.append("LOWER(retraction_nature) = LOWER(?)")
+        params.append(nature)
+
     # Substring match for country (semicolon-separated multi-country values),
-    # author, publisher, and reason.
+    # author, publisher, reason, and article_type.
     for col, val in [
         ("country", country),
         ("author", author),
         ("publisher", publisher),
         ("reason", reason),
+        ("article_type", article_type),
     ]:
         if val:
             conditions.append(f"LOWER({col}) LIKE LOWER(?)")

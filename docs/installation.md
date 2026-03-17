@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.10 or later
-- A writable directory for the SQLite database (default: `data/rw.sqlite`)
+- A writable home directory (the CLI database is stored at `~/.rwcheck/rw.sqlite`)
 
 ---
 
@@ -38,16 +38,18 @@ RWCheck queries a local SQLite file. Build it once after installation:
 rwcheck update
 ```
 
-The database is written to `data/rw.sqlite` by default. Set `RW_DB_PATH` to use a different path:
+The database is written to `~/.rwcheck/rw.sqlite` by default (the directory is created automatically). Override with `--db` or the `RW_DB_PATH` environment variable:
 
 ```bash
+rwcheck update --db /opt/rwcheck/rw.sqlite
+# or
 RW_DB_PATH=/opt/rwcheck/rw.sqlite rwcheck update
 ```
 
 To rebuild from a local CSV file:
 
 ```bash
-build-rw-db --csv retraction_watch.csv --db data/rw.sqlite
+build-rw-db --csv retraction_watch.csv
 ```
 
 ---
@@ -56,7 +58,7 @@ build-rw-db --csv retraction_watch.csv --db data/rw.sqlite
 
 | Variable | Default | Description |
 |---|---|---|
-| `RW_DB_PATH` | `data/rw.sqlite` | Path to the SQLite database |
+| `RW_DB_PATH` | `~/.rwcheck/rw.sqlite` (CLI) / `data/rw.sqlite` (API/Docker) | Path to the SQLite database |
 | `RW_CSV_URL` | GitLab URL | Source URL for `rwcheck update` |
 | `RATE_LIMIT` | `60/minute` | REST API rate limit (e.g. `120/minute`) |
 | `UPDATE_INTERVAL_HOURS` | `24` | Auto-update interval for the REST API |

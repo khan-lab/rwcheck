@@ -48,6 +48,8 @@ rw_reports/
 # .env (local secrets — never commit)
 .env
 
+meta_analysis/
 
 paper.bib
 paper.md
+

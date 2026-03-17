@@ -73,24 +73,24 @@ def test_pmid_invalid(sample_db: Path) -> None:
     assert result.exit_code != 0
 
 
-# ── batch-doi command ─────────────────────────────────────────────────────────
+# ── batch command ─────────────────────────────────────────────────────────────
 
 
-def test_batch_doi_text_file(sample_db: Path, tmp_path: Path) -> None:
+def test_batch_text_file(sample_db: Path, tmp_path: Path) -> None:
     doi_file = tmp_path / "dois.txt"
     doi_file.write_text(
         "10.9999/jmat.2020.001234\n10.8888/chem.2019.056789\n10.0000/does.not.exist\n"
     )
-    result = runner.invoke(app, ["batch-doi", str(doi_file), "--db", str(sample_db)])
+    result = runner.invoke(app, ["batch", str(doi_file), "--db", str(sample_db)])
     assert result.exit_code == 0
     assert "2/3" in result.output  # 2 retracted out of 3
 
 
-def test_batch_doi_json_out(sample_db: Path, tmp_path: Path) -> None:
+def test_batch_json_out(sample_db: Path, tmp_path: Path) -> None:
     doi_file = tmp_path / "dois.txt"
     doi_file.write_text("10.9999/jmat.2020.001234\n10.0000/nope\n")
     result = runner.invoke(
-        app, ["batch-doi", str(doi_file), "--db", str(sample_db), "--out", "json"]
+        app, ["batch", str(doi_file), "--db", str(sample_db), "--out", "json"]
     )
     assert result.exit_code == 0
     # Strip any stray status lines before the JSON block
@@ -99,11 +99,11 @@ def test_batch_doi_json_out(sample_db: Path, tmp_path: Path) -> None:
     assert len(data["results"]) == 2
 
 
-def test_batch_doi_tsv_out(sample_db: Path, tmp_path: Path) -> None:
+def test_batch_tsv_out(sample_db: Path, tmp_path: Path) -> None:
     doi_file = tmp_path / "dois.txt"
     doi_file.write_text("10.9999/jmat.2020.001234\n")
     result = runner.invoke(
-        app, ["batch-doi", str(doi_file), "--db", str(sample_db), "--out", "tsv"]
+        app, ["batch", str(doi_file), "--db", str(sample_db), "--out", "tsv"]
     )
     assert result.exit_code == 0
     # tsv output: header + 1 data row; strip any stray status lines
@@ -112,21 +112,32 @@ def test_batch_doi_tsv_out(sample_db: Path, tmp_path: Path) -> None:
     assert "True" in lines[1]
 
 
-def test_batch_doi_csv_file(sample_db: Path, tmp_path: Path) -> None:
-    """batch-doi reads from a CSV file using --col to pick the right column."""
+def test_batch_csv_file(sample_db: Path, tmp_path: Path) -> None:
+    """batch reads from a CSV file using --col to pick the right column."""
     csv_file = tmp_path / "papers.csv"
     csv_file.write_text("doi,title\n10.5555/natgen.2017.diabetesGWAS,Some paper\n")
     result = runner.invoke(
         app,
-        ["batch-doi", str(csv_file), "--db", str(sample_db), "--col", "doi"],
+        ["batch", str(csv_file), "--db", str(sample_db), "--col", "doi"],
     )
     assert result.exit_code == 0
     assert "RETRACTED" in result.output
 
 
-def test_batch_doi_missing_file(sample_db: Path) -> None:
-    result = runner.invoke(app, ["batch-doi", "/nonexistent/file.txt", "--db", str(sample_db)])
+def test_batch_missing_file(sample_db: Path) -> None:
+    result = runner.invoke(app, ["batch", "/nonexistent/file.txt", "--db", str(sample_db)])
     assert result.exit_code != 0
+
+
+def test_batch_mixed_file(sample_db: Path, tmp_path: Path) -> None:
+    """batch command auto-detects DOIs and PMIDs in the same file."""
+    mixed = tmp_path / "mixed.txt"
+    # 1 DOI, 1 PMID, 1 unrecognized line (not counting comment)
+    mixed.write_text("10.9999/jmat.2020.001234\n12345678\n# comment\nnot-an-id\n")
+    result = runner.invoke(app, ["batch", str(mixed), "--db", str(sample_db)])
+    assert result.exit_code == 0
+    assert "1 DOI(s) and 1 PMID(s)" in result.output
+    assert "(1 skipped)" in result.output
 
 
 # ── version flag ──────────────────────────────────────────────────────────────

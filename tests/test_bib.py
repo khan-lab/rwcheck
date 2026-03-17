@@ -1,4 +1,4 @@
-"""Tests for BibTeX parsing, report generation, and the batch-bib CLI command."""
+"""Tests for BibTeX parsing, report generation, and the bib CLI command."""
 
 from __future__ import annotations
 
@@ -247,8 +247,8 @@ def test_generate_html_report_retracted_entry() -> None:
     assert "smith2020mat" in html_str
     # DOI appears as a link to doi.org.
     assert "https://doi.org/10.9999/jmat.2020.001234" in html_str
-    # RETRACTED badge present.
-    assert "RETRACTED" in html_str
+    # Nature badge present (badge text reflects retraction_nature, e.g. "RETRACTION").
+    assert any(b in html_str for b in ("RETRACTION", "EXPRESSION OF CONCERN", "CORRECTION", "REINSTATEMENT"))
     # Retraction nature shown.
     assert "Retraction" in html_str
 
@@ -264,14 +264,14 @@ def test_generate_html_report_no_external_resources() -> None:
     assert "http" not in head
 
 
-# ── batch-bib CLI command ─────────────────────────────────────────────────────
+# ── bib CLI command ───────────────────────────────────────────────────────────
 
 
-def test_batch_bib_cli_hit(sample_db: Path, tmp_path: Path) -> None:
-    """batch-bib should find retracted entries and write report files."""
+def test_bib_cli_hit(sample_db: Path, tmp_path: Path) -> None:
+    """bib should find retracted entries and write report files."""
     result = runner.invoke(
         app,
-        ["batch-bib", str(FIXTURE_BIB), "--db", str(sample_db), "--report-dir", str(tmp_path)],
+        ["bib", str(FIXTURE_BIB), "--db", str(sample_db), "--report-dir", str(tmp_path)],
     )
     assert result.exit_code == 0
 
@@ -292,14 +292,14 @@ def test_batch_bib_cli_hit(sample_db: Path, tmp_path: Path) -> None:
     assert data["summary"]["retracted"] >= 1
 
 
-def test_batch_bib_cli_reports_in_default_dir(sample_db: Path, tmp_path: Path) -> None:
+def test_bib_cli_reports_in_default_dir(sample_db: Path, tmp_path: Path) -> None:
     """Without --report-dir, reports go next to the .bib file."""
     import shutil
 
     bib_copy = tmp_path / "sample.bib"
     shutil.copy(FIXTURE_BIB, bib_copy)
 
-    result = runner.invoke(app, ["batch-bib", str(bib_copy), "--db", str(sample_db)])
+    result = runner.invoke(app, ["bib", str(bib_copy), "--db", str(sample_db)])
     assert result.exit_code == 0
 
     assert (tmp_path / "sample_rwcheck.json").exists()
@@ -307,6 +307,6 @@ def test_batch_bib_cli_reports_in_default_dir(sample_db: Path, tmp_path: Path) -
     assert (tmp_path / "sample_rwcheck.html").exists()
 
 
-def test_batch_bib_cli_missing_file(sample_db: Path) -> None:
-    result = runner.invoke(app, ["batch-bib", "/nonexistent/refs.bib", "--db", str(sample_db)])
+def test_bib_cli_missing_file(sample_db: Path) -> None:
+    result = runner.invoke(app, ["bib", "/nonexistent/refs.bib", "--db", str(sample_db)])
     assert result.exit_code != 0

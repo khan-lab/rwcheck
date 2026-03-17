@@ -41,6 +41,8 @@ class RecordSummary(BaseModel):
     retraction_pmid: int | None = None
     paywalled: str | None = None
     urls: str | None = None
+    article_type: str | None = None
+    subject: str | None = None
 
 
 class MatchResponse(BaseModel):
@@ -179,5 +181,17 @@ class StatsResponse(BaseModel):
     by_country: list[list] = Field(
         default_factory=list,
         description="[[country_name, count], ...] sorted descending by count.",
+    )
+    total_by_nature: dict[str, int] = Field(
+        default_factory=dict,
+        description="{nature: count} — total records per retraction_nature.",
+    )
+    by_year_by_nature: dict[str, dict[str, int]] = Field(
+        default_factory=dict,
+        description="{year_str: {nature: count}} — per-year breakdown by nature.",
+    )
+    by_country_by_nature: dict[str, list[list]] = Field(
+        default_factory=dict,
+        description="{nature: [[country, count], ...]} — per-country breakdown by nature.",
     )
     meta: MetaResponse

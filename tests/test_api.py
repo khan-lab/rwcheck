@@ -7,37 +7,11 @@ injected into the app via monkeypatching.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-from fastapi.testclient import TestClient
-
 # We import the app module lazily inside tests so we can patch before import.
 import rw_api.main as main_module
-from rwcheck.db import get_connection
-
-
-@pytest.fixture()
-def client(sample_db: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    """TestClient with the DB path patched to the sample fixture."""
-    monkeypatch.setattr(main_module, "_DB_PATH", sample_db)
-
-    # Clear any cached meta/stats from previous test runs.
-    main_module._cached_meta.cache_clear()
-    main_module._cached_stats.cache_clear()
-
-    # Override _get_conn to always use the sample_db.
-    def _fake_get_conn() -> sqlite3.Connection:
-        return get_connection(sample_db)
-
-    monkeypatch.setattr(main_module, "_get_conn", _fake_get_conn)
-
-    # Disable the background scheduler / initial update thread during tests.
-    with patch.object(main_module, "_update_db_task", return_value=None):
-        with TestClient(main_module.app, raise_server_exceptions=True) as c:
-            yield c
 
 
 # ── /api/v1/meta ──────────────────────────────────────────────────────────────

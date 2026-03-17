@@ -32,6 +32,43 @@ def _load_logo() -> str:
 _LOGO_DATA_URI = _load_logo()
 
 
+# ── Nature palette (consistent with rw_api/ui_page.py) ────────────────────────
+
+_NATURE_ORDER_RPT = ["Retraction", "Expression of concern", "Correction", "Reinstatement"]
+_NATURE_BORDER_RPT = {
+    "Retraction":            "#c0392b",
+    "Expression of concern": "#e67e22",
+    "Correction":            "#16a085",
+    "Reinstatement":         "#2980b9",
+}
+_NATURE_BG_RPT = {
+    "Retraction":            "#fff5f5",
+    "Expression of concern": "#fef6ed",
+    "Correction":            "#e8f8f5",
+    "Reinstatement":         "#eaf4fb",
+}
+_NATURE_CSS_RPT = {
+    "Retraction":            "retraction",
+    "Expression of concern": "eoc",
+    "Correction":            "correction",
+    "Reinstatement":         "reinstatement",
+}
+_NATURE_BADGE_RPT = {
+    "Retraction":            "RETRACTION",
+    "Expression of concern": "EXPRESSION OF CONCERN",
+    "Correction":            "CORRECTION",
+    "Reinstatement":         "REINSTATEMENT",
+}
+
+
+def _most_severe_nature(matches: list[dict]) -> str:
+    """Return the most severe retraction_nature across a list of match records."""
+    for nat in _NATURE_ORDER_RPT:
+        if any(m.get("retraction_nature") == nat for m in matches):
+            return nat
+    return "Retraction"  # fallback
+
+
 # ── Data model ────────────────────────────────────────────────────────────────
 
 
@@ -362,6 +399,32 @@ footer a { color: #aaa; }
     .page { max-width: 100%; padding: 0; }
     details[open] { page-break-inside: avoid; }
 }
+
+/* ── Nature breakdown chips ── */
+.nature-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: -8px 0 24px; }
+.nature-chip  { padding: 3px 10px; border-radius: 4px; font-size: 0.82rem; }
+
+/* ── Nature-specific entry coloring ── */
+/* Retraction (red) */
+.ret-entry-retraction { border-color: #c0392b; }
+.ret-entry-retraction details > summary { background: #fff5f5; border-top-color: #c0392b; }
+.ret-entry-retraction details > summary::before { color: #c0392b; }
+.badge-retraction { background: #c0392b; }
+/* Expression of concern (orange) */
+.ret-entry-eoc { border-color: #e67e22; }
+.ret-entry-eoc details > summary { background: #fef6ed; border-top-color: #e67e22; }
+.ret-entry-eoc details > summary::before { color: #e67e22; }
+.badge-eoc { background: #e67e22; }
+/* Correction (teal) */
+.ret-entry-correction { border-color: #16a085; }
+.ret-entry-correction details > summary { background: #e8f8f5; border-top-color: #16a085; }
+.ret-entry-correction details > summary::before { color: #16a085; }
+.badge-correction { background: #16a085; }
+/* Reinstatement (blue) */
+.ret-entry-reinstatement { border-color: #2980b9; }
+.ret-entry-reinstatement details > summary { background: #eaf4fb; border-top-color: #2980b9; }
+.ret-entry-reinstatement details > summary::before { color: #2980b9; }
+.badge-reinstatement { background: #2980b9; }
 """
 
 
@@ -444,6 +507,25 @@ def generate_html_report(
         w(f'<div class="card {cls}"><div class="num">{num}</div><div class="lbl">{lbl}</div></div>')
     w("</div>")
 
+    # ── Nature breakdown chips ─────────────────────────────────────────────────
+    nature_counts: dict[str, int] = {}
+    for r in retracted:
+        nat = _most_severe_nature(r.all_matches)
+        nature_counts[nat] = nature_counts.get(nat, 0) + 1
+    if nature_counts:
+        w('<div class="nature-chips">')
+        for nat in _NATURE_ORDER_RPT:
+            cnt = nature_counts.get(nat, 0)
+            if cnt:
+                border = _NATURE_BORDER_RPT[nat]
+                bg = _NATURE_BG_RPT[nat]
+                w(
+                    f'<span class="nature-chip" '
+                    f'style="border-left:3px solid {border};background:{bg};color:{border}">'
+                    f"{_h(nat)}: <b>{cnt}</b></span>"
+                )
+        w("</div>")
+
     # ── Retracted section ─────────────────────────────────────────────────────
     w('<div class="section ret">')
     w(f"<h2>⚠️ Retracted References ({len(retracted)})</h2>")
@@ -453,9 +535,12 @@ def generate_html_report(
             year_str = f" ({_h(e.year)})" if e.year else ""
             journal_str = f" — <em>{_h(e.journal)}</em>" if e.journal else ""
             label = f"[{_h(e.key)}] {_h(e.short_author)}{year_str}{journal_str}"
-            w('<div class="ret-entry">')
+            nature_str = _most_severe_nature(r.all_matches)
+            nature_cls = _NATURE_CSS_RPT.get(nature_str, "retraction")
+            badge_text = _NATURE_BADGE_RPT.get(nature_str, "RETRACTED")
+            w(f'<div class="ret-entry ret-entry-{nature_cls}">')
             w("<details open>")
-            w(f'<summary>{label} <span class="badge">RETRACTED</span></summary>')
+            w(f'<summary>{label} <span class="badge badge-{nature_cls}">{badge_text}</span></summary>')
             w('<div class="entry-body">')
             if e.title:
                 w(f'<p class="entry-title">{_h(e.title)}</p>')

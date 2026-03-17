@@ -48,7 +48,7 @@ console = Console(stderr=True)
 
 # Canonical source URL.
 DEFAULT_URL = "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
-DEFAULT_DB = Path("data/rw.sqlite")
+DEFAULT_DB = Path.home() / ".rwcheck" / "rw.sqlite"
 DEFAULT_CACHED_CSV = Path("data/cached_rw.csv")
 
 # SQLite batch insert size.

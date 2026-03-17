@@ -1,7 +1,7 @@
 # Zotero Workflow
 
 RWCheck can screen an entire Zotero library for retracted papers in a few steps.
-The workflow exports your library as BibTeX, runs `rwcheck batch-bib`, and gives you
+The workflow exports your library as BibTeX, runs `rwcheck bib`, and gives you
 an HTML report listing every retracted reference with its retraction date, reason,
 and journal.
 
@@ -43,7 +43,7 @@ rwcheck update
 ```
 
 This downloads the Retraction Watch CSV and builds a local SQLite database
-(`data/rw.sqlite`). It takes ~30 seconds on first run and is skipped on
+(`~/.rwcheck/rw.sqlite`). It takes ~30 seconds on first run and is skipped on
 subsequent runs if the dataset has not changed.
 
 ---
@@ -51,7 +51,7 @@ subsequent runs if the dataset has not changed.
 ## Step 3 — Run the check
 
 ```bash
-rwcheck batch-bib my_library.bib
+rwcheck bib my_library.bib
 ```
 
 **Console output**
@@ -105,7 +105,7 @@ with your Zotero library automatically. You can then schedule a nightly cron job
 
 ```bash
 # crontab entry — run every night at 01:00
-0 1 * * * cd ~/papers && rwcheck update && rwcheck batch-bib my_library.bib \
+0 1 * * * cd ~/papers && rwcheck update && rwcheck bib my_library.bib \
            --report-dir ~/papers/rw-reports/
 ```
 
@@ -119,7 +119,7 @@ If you have a shared [rwcheck server](rest-api.md) (e.g. for a research group),
 pass `--api` to delegate lookups:
 
 ```bash
-rwcheck batch-bib my_library.bib --api https://rwcheck.khanlab.bio
+rwcheck bib my_library.bib --api https://rwcheck.khanlab.bio
 ```
 
 No local database is needed — all queries are forwarded to the remote API.
@@ -132,7 +132,7 @@ Mendeley uses the same export format:
 
 1. **File → Export…** → select **BibTeX (.bib)**.
 2. Choose *All References* or a specific group.
-3. Save and run `rwcheck batch-bib` as above.
+3. Save and run `rwcheck bib` as above.
 
 ---
 
@@ -142,3 +142,16 @@ You can also export references to a BibTeX file from the Paperpile using the fol
   - Hold down the Shift key and click to select multiple references or click the checkbox next to each title to select one or more references from the list.
   - Choose Export from the three-dot menu in the toolbar.
   - Select BibTeX from the options and click Export.
+
+---
+
+## Using a RIS export instead of BibTeX
+
+Zotero, Mendeley, and Paperpile can all export references as RIS (`.ris`) files.
+Use `rwcheck ris` to check a RIS export directly — no conversion needed:
+
+```bash
+rwcheck ris my_library.ris
+```
+
+The output format and report files are identical to `rwcheck bib` (Markdown, HTML, and JSON).

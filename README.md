@@ -1,8 +1,8 @@
 <img src="docs/rwcheck_logo.png" alt="RWCheck" width="300">
 
-> **RWCheck — Fast retraction screening for DOIs, PubMed IDs, and BibTeX references**
+> **RWCheck — Fast retraction screening for DOIs, PubMed IDs, BibTeX and RIS references**
 
-Check DOIs, PubMed IDs, and `.bib` files against the [Retraction Watch](https://retractionwatch.com/) dataset.
+Check DOIs, PubMed IDs, and `.bib`/`.ris` files against the [Retraction Watch](https://retractionwatch.com/) dataset.
 `rwcheck` ingests the Retraction Watch data into a local **SQLite** database for O(log n) lookups, exposes a **FastAPI REST API**, and provides a **CLI** for interactive and batch queries — no external database required.
 
 **Live API:** <https://rwcheck.khanlab.bio>
@@ -12,7 +12,7 @@ Check DOIs, PubMed IDs, and `.bib` files against the [Retraction Watch](https://
 ## Features
 
 - **REST API** — versioned (`/api/v1/`), OpenAPI docs, rate limiting, daily auto-update.
-- **CLI** — single DOI/PMID/title lookup, batch from file, BibTeX screening; `--api` flag delegates to any rwcheck server.
+- **CLI** — single DOI/PMID/title lookup, batch from file, BibTeX and RIS screening; `--api` flag delegates to any rwcheck server.
 - **SQLite-backed** — fast indexed lookup; no Postgres or Redis required.
 - **Python API** — import and call directly; no server needed.
 - **Search** — filter the dataset by journal, author, country, publisher, reason, or year.
@@ -46,20 +46,20 @@ make build-db             # uses retraction_watch.csv in the current directory
 ### 3. Check a DOI
 
 ```bash
-rwcheck doi 10.1038/nature12345
-rwcheck doi "https://doi.org/10.1038/nature12345"   # URL prefix is stripped
+rwcheck doi 10.1126/science.1201068
+rwcheck doi "https://doi.org/10.1038/nm1491"   # URL prefix is stripped automatically
 ```
 
 ### 4. Check a PubMed ID
 
 ```bash
-rwcheck pmid 12345678
+rwcheck pmid 21474762
 ```
 
 ### 5. Check by title
 
 ```bash
-rwcheck title "Moderation of gut microbiota is associated with..."
+rwcheck title "Coping with Chaos: How Disordered Contexts Promote Stereotyping and Discrimination"
 ```
 
 > **Note:** Matching is exact and case-insensitive. When a match is found a warning
@@ -67,20 +67,30 @@ rwcheck title "Moderation of gut microbiota is associated with..."
 
 ### 6. Batch check from a file
 
+IDs are auto-detected: DOIs (matching the `10.xxxx/...` pattern) and PMIDs (pure integers)
+can be mixed in the same file.
+
+```
+# refs.txt — DOIs and PMIDs can be mixed freely
+10.1126/science.1201068
+10.1038/nm1491
+21474762
+```
+
 ```bash
-# Plain text (one DOI per line)
-rwcheck batch-doi papers.txt
-rwcheck batch-doi papers.txt --out tsv > results.tsv
-rwcheck batch-doi papers.txt --out json | jq '.results[] | select(.matched)'
+# Plain text (one ID per line — DOIs and PMIDs can be mixed)
+rwcheck batch refs.txt
+rwcheck batch refs.txt --out tsv > results.tsv
+rwcheck batch refs.txt --out json | jq '.results[] | select(.matched)'
 
 # CSV file (specify column with --col)
-rwcheck batch-doi references.csv --col doi
+rwcheck batch references.csv --col doi
 ```
 
 ### 7. Check a BibTeX file
 
 ```bash
-rwcheck batch-bib refs.bib
+rwcheck bib refs.bib
 ```
 
 Extracts DOIs and PubMed IDs from every entry and queries them against the local database.
@@ -94,13 +104,27 @@ Three report files are written next to the input:
 
 ```bash
 # Write reports to a specific directory
-rwcheck batch-bib refs.bib --report-dir ./reports/
+rwcheck bib refs.bib --report-dir ./reports/
 
 # Use the live API instead of the local DB
-rwcheck batch-bib refs.bib --api https://rwcheck.khanlab.bio
+rwcheck bib refs.bib --api https://rwcheck.khanlab.bio
 ```
 
-### 8. Update the database
+### 8. Check a RIS file
+
+```bash
+rwcheck ris refs.ris
+```
+
+Extracts DOIs and PubMed IDs from RIS tags (`DO`, `UR`, `AN`) and screens every
+reference against Retraction Watch. Writes the same three report files as `bib`:
+
+```bash
+rwcheck ris refs.ris --report-dir ./reports/
+rwcheck ris refs.ris --api https://rwcheck.khanlab.bio
+```
+
+### 9. Update the database
 
 ```bash
 rwcheck update           # download latest CSV; skip if unchanged
@@ -138,7 +162,8 @@ All data endpoints are versioned under `/api/v1/`. The root UI and health check 
 | `GET` | `/api/v1/check/title/{title}` | Exact title lookup (case-insensitive); result includes `match_type: "title"` warning |
 | `POST` | `/api/v1/check/batch` | Batch lookup (up to 500 items) |
 | `POST` | `/api/v1/check/bib` | Upload a `.bib` file; returns retracted/clean summary |
-| `GET` | `/api/v1/search` | Filter dataset by journal, author, country, publisher, reason, or year |
+| `POST` | `/api/v1/check/ris` | Upload a `.ris` file; returns retracted/clean summary |
+| `GET` | `/api/v1/search` | Filter dataset by journal, author, country, publisher, reason, year, nature, or article type |
 | `GET` | `/api/v1/enrich/doi/{doi}` | Retraction status + CrossRef + OpenAlex metadata |
 | `GET` | `/api/v1/reports/{id}/html` | Serve a stored `.bib` report as HTML |
 | `GET` | `/api/v1/reports/{id}/zip` | Download a stored `.bib` report as ZIP |
@@ -291,13 +316,13 @@ Usage: rwcheck [OPTIONS] COMMAND [ARGS]...
   Check DOIs, PMIDs, and titles against the Retraction Watch dataset.
 
 Commands:
-  doi         Check a single DOI.
-  pmid        Check a single PubMed ID.
-  title       Check by exact title (case-insensitive); warns to confirm with DOI/PMID.
-  batch-doi   Batch-check DOIs from a text or CSV file.
-  batch-pmid  Batch-check PMIDs from a text or CSV file.
-  batch-bib   Check all references in a BibTeX file; write JSON/Markdown/HTML reports.
-  update      Download the latest dataset and rebuild the local DB.
+  doi    Check a single DOI.
+  pmid   Check a single PubMed ID.
+  title  Check by exact title (case-insensitive); warns to confirm with DOI/PMID.
+  batch  Batch-check DOIs and/or PMIDs from a text or CSV file (auto-detected).
+  bib    Check all references in a BibTeX file; write JSON/Markdown/HTML reports.
+  ris    Check all references in a RIS file; write JSON/Markdown/HTML reports.
+  update Download the latest dataset and rebuild the local DB.
 
 Options:
   --version   Show version and exit.
@@ -308,12 +333,12 @@ Options:
 
 | Option | Description |
 |--------|-------------|
-| `--db PATH` | Path to local SQLite DB (default: `data/rw.sqlite`) |
+| `--db PATH` | Path to local SQLite DB (default: `~/.rwcheck/rw.sqlite`) |
 | `--api URL` | Use remote API instead of local DB |
 | `--json` | Output raw JSON (single-item commands) |
 | `--out json\|tsv\|table` | Output format for batch commands |
 | `--col NAME` | CSV column name for batch commands |
-| `--report-dir DIR` | Directory for `batch-bib` report files |
+| `--report-dir DIR` | Directory for `bib` report files |
 | `--force` | Force DB rebuild even if unchanged |
 
 
@@ -321,7 +346,7 @@ Options:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RW_DB_PATH` | `data/rw.sqlite` | SQLite database path |
+| `RW_DB_PATH` | `~/.rwcheck/rw.sqlite` (CLI) / `data/rw.sqlite` (API/Docker) | SQLite database path |
 | `RW_CSV_URL` | GitLab raw URL | Retraction Watch CSV source |
 | `RATE_LIMIT` | `60/minute` | API rate limit per IP (slowapi) |
 | `UPDATE_INTERVAL_HOURS` | `24` | Hours between automatic DB updates |

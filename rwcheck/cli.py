@@ -2,20 +2,22 @@
 
 Commands
 --------
-  doi         Check a single DOI.
-  pmid        Check a single PubMed ID.
-  batch-doi   Batch-check DOIs from a text or CSV file.
-  batch-pmid  Batch-check PMIDs from a text or CSV file.
-  batch-bib   Check all references in a BibTeX file; write JSON + Markdown report.
-  update      Download the latest dataset and (re)build the local SQLite DB.
+  doi    Check a single DOI.
+  pmid   Check a single PubMed ID.
+  batch  Batch-check DOIs and/or PMIDs from a text or CSV file (auto-detected).
+  bib    Check all references in a BibTeX file; write JSON + Markdown report.
+  ris    Check all references in a RIS file; write JSON + Markdown report.
+  update Download the latest dataset and (re)build the local SQLite DB.
 
 Usage examples::
 
     rwcheck doi 10.1038/nature12345
     rwcheck pmid 12345678
-    rwcheck batch-doi papers.txt --out tsv
-    rwcheck batch-bib refs.bib
-    rwcheck batch-bib refs.bib --report-dir ./reports/
+    rwcheck batch papers.txt --out tsv
+    rwcheck bib refs.bib
+    rwcheck bib refs.bib --report-dir ./reports/
+    rwcheck ris refs.ris
+    rwcheck ris refs.ris --report-dir ./reports/
     rwcheck update
     rwcheck update --force
 """
@@ -57,7 +59,7 @@ console = Console(stderr=True)  # status/errors to stderr
 out_console = Console()  # results to stdout
 
 # Default local DB path (resolved relative to CWD so it works from the repo root).
-_DEFAULT_DB = "data/rw.sqlite"
+_DEFAULT_DB = str(Path.home() / ".rwcheck" / "rw.sqlite")
 _DEFAULT_URL = "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
 
 
@@ -83,7 +85,8 @@ def _db_conn(db_path: str):
     try:
         return get_connection(_resolve_db(db_path))
     except FileNotFoundError as exc:
-        rprint(f"[red]Error:[/red] {exc}")
+        rprint(f"[red]Error:[/red] Database not found: {_resolve_db(db_path)}")
+        rprint("[dim]Run [bold]rwcheck update[/bold] to download and build the database.[/dim]")
         raise typer.Exit(code=1) from exc
 
 
@@ -367,14 +370,17 @@ def title(
         )
 
 
-@app.command(name="batch-doi")
-def batch_doi(
-    file: Annotated[Path, typer.Argument(metavar="FILE", help="Text/CSV file of DOIs.")],
+@app.command(name="batch")
+def batch(
+    file: Annotated[
+        Path, typer.Argument(metavar="FILE", help="Text/CSV file of DOIs and/or PMIDs.")
+    ],
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
     out: Annotated[OutFormat, typer.Option("--out", help="Output format.")] = OutFormat.table,
     col: Annotated[
-        str | None, typer.Option("--col", help="CSV column name containing DOIs.")
+        str | None,
+        typer.Option("--col", help="CSV column name containing IDs (DOIs and/or PMIDs)."),
     ] = None,
     report_dir: Annotated[
         Path | None,
@@ -384,7 +390,10 @@ def batch_doi(
         ),
     ] = None,
 ) -> None:
-    """Batch-check DOIs from a plain-text file (one per line) or a CSV/TSV file.
+    """Batch-check DOIs and/or PMIDs from a plain-text file (one per line) or a CSV/TSV file.
+
+    IDs are auto-detected: values matching the DOI pattern (10.xxxx/...) are treated
+    as DOIs; pure integers are treated as PMIDs. A single file may mix both types.
 
     Always writes three report files next to the input (or in --report-dir):
 
@@ -399,18 +408,37 @@ def batch_doi(
         rprint(f"[red]Error:[/red] File not found: {file}")
         raise typer.Exit(1)
 
-    dois = _read_ids_from_file(file, col)
+    raw_ids = _read_ids_from_file(file, col)
+    dois: list[str] = []
+    pmids: list[int] = []
+    skipped = 0
+    for raw in raw_ids:
+        stripped = raw.strip()
+        normed = normalize_doi(stripped)
+        if stripped.lstrip("-").isdigit():
+            # Pure integer → PMID (checked before DOI to avoid mis-classifying PMIDs)
+            pmids.append(int(stripped))
+        elif normed is not None and normed.startswith("10."):
+            # DOI: must start with "10." after normalisation
+            dois.append(stripped)
+        else:
+            skipped += 1
+
     if out == OutFormat.table:
-        console.print(f"[dim]Checking {len(dois)} DOI(s)…[/dim]")
+        console.print(
+            f"[dim]Checking {len(dois)} DOI(s) and {len(pmids)} PMID(s)"
+            + (f" ({skipped} skipped)" if skipped else "")
+            + "…[/dim]"
+        )
 
     if api:
-        data = _api_post(api, "api/v1/check/batch", {"dois": dois, "pmids": []})
+        data = _api_post(api, "api/v1/check/batch", {"dois": dois, "pmids": pmids})
         results = data["results"]
         meta = data["meta"]
     else:
         conn = _db_conn(db)
         meta = get_meta(conn)
-        results = query_batch(conn, dois=dois, pmids=[])
+        results = query_batch(conn, dois=dois, pmids=pmids)
 
     if out == OutFormat.json:
         out_console.print_json(json.dumps({"results": results, "meta": meta}))
@@ -441,77 +469,8 @@ def batch_doi(
         rprint(f"  JSON     → [cyan]{json_path}[/cyan]")
 
 
-@app.command(name="batch-pmid")
-def batch_pmid(
-    file: Annotated[Path, typer.Argument(metavar="FILE", help="Text/CSV file of PMIDs.")],
-    db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
-    api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
-    out: Annotated[OutFormat, typer.Option("--out", help="Output format.")] = OutFormat.table,
-    col: Annotated[
-        str | None, typer.Option("--col", help="CSV column name containing PMIDs.")
-    ] = None,
-    report_dir: Annotated[
-        Path | None,
-        typer.Option(
-            "--report-dir",
-            help="Directory to write report files (default: same dir as input file).",
-        ),
-    ] = None,
-) -> None:
-    """Batch-check PMIDs from a plain-text file or a CSV/TSV file.
-
-    Always writes three report files next to the input (or in --report-dir):
-
-    \b
-      <stem>_rwcheck.md   — human-readable Markdown report
-      <stem>_rwcheck.json — machine-readable JSON with full match details
-      <stem>_rwcheck.html — self-contained HTML report
-    """
-    from rwcheck.report import batch_results_to_bib_results, write_reports
-
-    if not file.exists():
-        rprint(f"[red]Error:[/red] File not found: {file}")
-        raise typer.Exit(1)
-
-    raw_ids = _read_ids_from_file(file, col)
-    pmids: list[int | str] = [int(x) for x in raw_ids if x.strip().lstrip("-").isdigit()]
-    if out == OutFormat.table:
-        console.print(
-            f"[dim]Checking {len(pmids)} PMID(s) "
-            f"(skipped {len(raw_ids) - len(pmids)} non-integer)…[/dim]"
-        )
-
-    if api:
-        data = _api_post(api, "api/v1/check/batch", {"dois": [], "pmids": pmids})
-        results = data["results"]
-        meta = data["meta"]
-    else:
-        conn = _db_conn(db)
-        meta = get_meta(conn)
-        results = query_batch(conn, dois=[], pmids=pmids)
-
-    if out == OutFormat.json:
-        out_console.print_json(json.dumps({"results": results, "meta": meta}))
-    elif out == OutFormat.tsv:
-        _emit_batch_tsv(results)
-    else:
-        matched = sum(1 for r in results if r["matched"])
-        rprint(f"[bold]Results:[/bold] {matched}/{len(results)} retracted")
-        for r in results:
-            flag = "[bold red]RETRACTED[/bold red]" if r["matched"] else "[green]ok[/green]"
-            rprint(f"  {flag}  {r['query']}")
-
-    bib_results = batch_results_to_bib_results(results)
-    json_path, md_path, html_path = write_reports(bib_results, meta, file, report_dir)
-    if out == OutFormat.table:
-        rprint("\nReports written:")
-        rprint(f"  Markdown → [cyan]{md_path}[/cyan]")
-        rprint(f"  HTML     → [cyan]{html_path}[/cyan]")
-        rprint(f"  JSON     → [cyan]{json_path}[/cyan]")
-
-
-@app.command(name="batch-bib")
-def batch_bib(
+@app.command(name="bib")
+def bib(
     file: Annotated[Path, typer.Argument(metavar="FILE", help="BibTeX (.bib) file to check.")],
     db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
     api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
@@ -663,6 +622,125 @@ def _batch_bib_via_api(
             )
         )
     return results
+
+
+@app.command(name="ris")
+def ris_cmd(
+    file: Annotated[Path, typer.Argument(metavar="FILE", help="RIS (.ris) file to check.")],
+    db: Annotated[str, typer.Option("--db", help="Path to local SQLite DB.")] = _DEFAULT_DB,
+    api: Annotated[str | None, typer.Option("--api", help="Base URL of rwcheck REST API.")] = None,
+    report_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--report-dir", help="Directory to write report files (default: same dir as .ris)."
+        ),
+    ] = None,
+) -> None:
+    """Parse a RIS file and check every reference against Retraction Watch.
+
+    Extracts DOIs and PubMed IDs from each entry (``DO``, ``UR``, and ``AN``
+    fields).
+
+    Always writes three report files next to the input (or in --report-dir):
+
+    \b
+      <stem>_rwcheck.md   — human-readable Markdown report
+      <stem>_rwcheck.json — machine-readable JSON with full match details
+      <stem>_rwcheck.html — self-contained HTML report
+
+    A summary is also printed to stdout.
+    """
+    from rwcheck.report import BibResult, write_reports
+    from rwcheck.ris import parse_ris_file
+
+    if not file.exists():
+        rprint(f"[red]Error:[/red] File not found: {file}")
+        raise typer.Exit(1)
+
+    # ── Parse RIS ─────────────────────────────────────────────────────────────
+    console.print(f"[dim]Parsing [cyan]{file}[/cyan]…[/dim]")
+    entries = parse_ris_file(file)
+    if not entries:
+        rprint(f"[yellow]Warning:[/yellow] No RIS entries found in '{file}'.")
+        raise typer.Exit(0)
+    console.print(f"[dim]Found {len(entries)} entries.[/dim]")
+
+    # ── Collect unique DOIs and PMIDs for batch lookup ────────────────────────
+    doi_map: dict[str, list[int]] = {}
+    pmid_map: dict[int, list[int]] = {}
+
+    for idx, entry in enumerate(entries):
+        if entry.doi:
+            doi_map.setdefault(entry.doi, []).append(idx)
+        if entry.pmid:
+            pmid_map.setdefault(entry.pmid, []).append(idx)
+
+    # ── Query ─────────────────────────────────────────────────────────────────
+    if api:
+        bib_results = _batch_bib_via_api(api, entries, doi_map, pmid_map)
+        api_meta = _api_get(api, "api/v1/meta")
+        meta = {k: str(v) for k, v in api_meta.items()}
+    else:
+        conn = _db_conn(db)
+        meta = get_meta(conn)
+
+        doi_batch = query_batch(conn, dois=list(doi_map.keys()), pmids=[])
+        doi_lookup: dict[str, list[dict]] = {}
+        for r in doi_batch:
+            doi_lookup[r["query"]] = r["matches"]
+
+        pmid_batch = query_batch(conn, dois=[], pmids=list(pmid_map.keys()))
+        pmid_lookup: dict[int, list[dict]] = {}
+        for r in pmid_batch:
+            pmid_lookup[int(r["query"])] = r["matches"]
+
+        bib_results = []
+        for entry in entries:
+            doi_matches = doi_lookup.get(entry.doi, []) if entry.doi else []
+            pmid_matches = pmid_lookup.get(entry.pmid, []) if entry.pmid else []
+            bib_results.append(
+                BibResult(entry=entry, doi_matches=doi_matches, pmid_matches=pmid_matches)
+            )
+
+    # ── Write reports ─────────────────────────────────────────────────────────
+    json_path, md_path, html_path = write_reports(bib_results, meta, file, report_dir)
+
+    # ── Print summary to stdout ───────────────────────────────────────────────
+    n_retracted = sum(1 for r in bib_results if r.matched)
+    n_unchecked = sum(1 for r in bib_results if not r.checkable)
+    n_clean = len(bib_results) - n_retracted - n_unchecked
+
+    from rich.table import Table
+
+    summary = Table(
+        title="Retraction Watch — RIS report", box=None, show_header=False, padding=(0, 2)
+    )
+    summary.add_column(style="bold")
+    summary.add_column()
+    summary.add_row("Total references", str(len(bib_results)))
+    summary.add_row(
+        "[bold red]Retracted[/bold red]" if n_retracted else "Retracted",
+        f"[bold red]{n_retracted}[/bold red]" if n_retracted else "0",
+    )
+    summary.add_row("Clean (not found)", str(n_clean))
+    summary.add_row("Unchecked (no DOI/PMID)", str(n_unchecked))
+    out_console.print(summary)
+
+    if n_retracted:
+        rprint("\n[bold red]⚠ Retracted entries:[/bold red]")
+        for r in bib_results:
+            if r.matched:
+                m = r.all_matches[0]
+                rprint(
+                    f"  [red]✗[/red] [{r.entry.key}] "
+                    f"{r.entry.short_author} {r.entry.year or ''} — "
+                    f"{m.get('retraction_nature', '')} | {m.get('journal', '')}"
+                )
+
+    rprint("\nReports written:")
+    rprint(f"  Markdown → [cyan]{md_path}[/cyan]")
+    rprint(f"  HTML     → [cyan]{html_path}[/cyan]")
+    rprint(f"  JSON     → [cyan]{json_path}[/cyan]")
 
 
 @app.command()

@@ -1,0 +1,37 @@
+TY  - JOUR
+AU  - Smith, John
+TI  - A retracted paper on materials
+DO  - 10.9999/jmat.2020.001234
+PY  - 2020
+JO  - Journal of Materials
+ER  -
+
+TY  - JOUR
+AU  - Jones, Alice
+TI  - Another retracted chemistry paper
+AN  - 12345678
+PY  - 2019
+JO  - Chemistry Letters
+ER  -
+
+TY  - JOUR
+AU  - Brown, Bob
+TI  - A retracted paper found via doi.org URL
+UR  - https://doi.org/10.8888/chem.2019.056789
+PY  - 2019
+JO  - Advanced Chemistry
+ER  -
+
+TY  - JOUR
+AU  - Lee, Carol
+TI  - A clean paper with no retraction
+DO  - 10.0000/clean.2021.999999
+PY  - 2021
+JO  - Some Journal
+ER  -
+
+TY  - BOOK
+AU  - Unknown, Author
+TI  - A book with no DOI or PMID
+PY  - 2018
+ER  -

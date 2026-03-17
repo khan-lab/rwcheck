@@ -30,7 +30,7 @@ def _resolve_db() -> Path:
     """Return the DB path from env or default, with a helpful error if missing."""
     import os
 
-    db = Path(os.environ.get("RW_DB_PATH", "data/rw.sqlite"))
+    db = Path(os.environ.get("RW_DB_PATH", str(Path.home() / ".rwcheck" / "rw.sqlite")))
     if not db.exists():
         print(
             f"[rwcheck] Database not found at {db}.\n"

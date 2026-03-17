@@ -265,9 +265,46 @@ curl -X POST "http://localhost:8000/api/v1/check/bib" \
 
 ---
 
+### `POST /api/v1/check/ris`
+
+Upload a RIS file and check every reference. Returns the same JSON summary as `/check/bib`.
+
+**Request**
+- Content-Type: `multipart/form-data`
+- Field: `file` — a `.ris` file
+
+**Example**
+```bash
+curl -X POST "http://localhost:8000/api/v1/check/ris" \
+  -F "file=@refs.ris"
+```
+
+**Response** — identical schema to `/check/bib`:
+```json
+{
+  "total": 15,
+  "retracted": 1,
+  "clean": 13,
+  "unchecked": 1,
+  "results": [
+    {
+      "key": "Smith2020_1",
+      "title": "Example Paper",
+      "doi": "10.1016/j.cell.2009.10.015",
+      "pmid": null,
+      "matched": true,
+      "matches": [ { "..." } ]
+    }
+  ],
+  "meta": { "..." }
+}
+```
+
+---
+
 ### `GET /api/v1/search`
 
-Search the dataset by journal, author, country, publisher, reason, or year. At least one filter is required.
+Search the dataset by journal, author, country, publisher, reason, nature, article type, or year. At least one filter is required.
 
 **Query parameters**
 
@@ -278,6 +315,8 @@ Search the dataset by journal, author, country, publisher, reason, or year. At l
 | `country` | Partial (`LIKE`) | Country substring |
 | `publisher` | Partial (`LIKE`) | Publisher substring |
 | `reason` | Partial (`LIKE`) | Retraction reason substring |
+| `nature` | Exact (case-insensitive) | Retraction nature (`Retraction`, `Correction`, `Expression of Concern`) |
+| `article_type` | Partial (`LIKE`) | Article type substring |
 | `year` | Prefix match | Retraction year (e.g. `2020`) |
 | `limit` | — | Max results (default `100`, max `500`) |
 | `offset` | — | Pagination offset (default `0`) |
@@ -446,6 +485,12 @@ Fields returned inside every `matches` array:
       -H "Content-Type: application/json" \
       -d '{"dois": ["10.1038/nature12345"], "pmids": [12345678]}' | jq .
 
+    # BibTeX file
+    curl -X POST "$BASE/check/bib" -F "file=@refs.bib" | jq .
+
+    # RIS file
+    curl -X POST "$BASE/check/ris" -F "file=@refs.ris" | jq .
+
     # Search
     curl "$BASE/search?journal=PLOS+ONE&limit=10" | jq .
 
@@ -477,6 +522,11 @@ Fields returned inside every `matches` array:
     })
     for item in r.json()["results"]:
         print(item["query"], "→", "RETRACTED" if item["matched"] else "ok")
+
+    # RIS file
+    with open("refs.ris", "rb") as f:
+        r = httpx.post(f"{BASE}/check/ris", files={"file": ("refs.ris", f, "application/octet-stream")})
+    print(r.json()["retracted"], "retracted")
 
     # Search
     r = httpx.get(f"{BASE}/search", params={"reason": "fabrication", "limit": 20})
@@ -512,6 +562,11 @@ Fields returned inside every `matches` array:
     for item in r.json()["results"]:
         status = "RETRACTED" if item["matched"] else "ok"
         print(f"[{status}] {item['query']}")
+
+    # RIS file
+    with open("refs.ris", "rb") as f:
+        r = requests.post(f"{BASE}/check/ris", files={"file": ("refs.ris", f)})
+    print(r.json()["retracted"], "retracted")
 
     # Search
     r = requests.get(f"{BASE}/search", params={"journal": "PLOS ONE", "limit": 50})

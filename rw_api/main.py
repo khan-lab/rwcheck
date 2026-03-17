@@ -19,6 +19,7 @@ GET  /api/v1/check/title/{title}
 GET  /api/v1/search         — filter by journal/author/country/publisher/reason/year
 POST /api/v1/check/batch    — body: {dois: [], pmids: []}
 POST /api/v1/check/bib      — BibTeX file upload
+POST /api/v1/check/ris      — RIS file upload
 GET  /api/v1/enrich/doi/{doi} — CrossRef + OpenAlex metadata enrichment
 GET  /api/v1/reports/{id}/html — serve shared HTML report (anyone with link)
 GET  /api/v1/reports/{id}/zip  — download ZIP of all report formats
@@ -450,6 +451,13 @@ async def search_endpoint(
     reason: str | None = Query(None, description="Partial retraction reason (case-insensitive)."),
     year: int | None = Query(None, description="Retraction year (e.g. 2020)."),
     published_year: int | None = Query(None, description="Original paper publication year."),
+    nature: str | None = Query(
+        None,
+        description="Exact retraction nature (case-insensitive): 'Retraction', 'Expression of concern', 'Correction', or 'Reinstatement'.",
+    ),
+    article_type: str | None = Query(
+        None, description="Partial article type (case-insensitive, e.g. 'Journal Article')."
+    ),
     limit: int = Query(100, ge=1, le=500, description="Page size (max 500)."),
     offset: int = Query(0, ge=0, description="Page offset."),
 ) -> SearchResponse:
@@ -460,7 +468,10 @@ async def search_endpoint(
     At least one filter parameter must be provided.
     """
     _require_db()
-    if all(v is None for v in (journal, author, country, publisher, reason, year, published_year)):
+    if all(
+        v is None
+        for v in (journal, author, country, publisher, reason, year, published_year, nature, article_type)
+    ):
         raise HTTPException(status_code=400, detail="At least one filter parameter is required.")
     conn = _get_conn()
     total, records = search_records(
@@ -472,6 +483,8 @@ async def search_endpoint(
         reason=reason,
         year=year,
         published_year=published_year,
+        nature=nature,
+        article_type=article_type,
         limit=limit,
         offset=offset,
     )
@@ -664,6 +677,70 @@ async def check_bib(
         tmp_path = Path(tmp.name)
     try:
         entries = parse_bib_file(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    conn = _get_conn()
+    results: list[BibCheckEntry] = []
+    for entry in entries:
+        doi_matches = query_by_doi(conn, entry.doi) if entry.doi else []
+        pmid_matches = query_by_pmid(conn, entry.pmid) if entry.pmid else []
+        seen: set[int] = set()
+        all_matches: list[dict[str, Any]] = []
+        for m in doi_matches + pmid_matches:
+            if m["record_id"] not in seen:
+                seen.add(m["record_id"])
+                all_matches.append(m)
+        results.append(
+            BibCheckEntry(
+                key=entry.key,
+                title=entry.title,
+                doi=entry.doi_raw,
+                pmid=entry.pmid,
+                matched=bool(all_matches),
+                matches=[_to_summary(m) for m in all_matches],
+            )
+        )
+
+    retracted = sum(1 for r in results if r.matched)
+    unchecked = sum(1 for r in results if not r.doi and not r.pmid)
+    clean = len(results) - retracted - unchecked
+    return BibCheckResponse(
+        total=len(results),
+        retracted=retracted,
+        clean=clean,
+        unchecked=unchecked,
+        results=results,
+        meta=_meta_response(),
+    )
+
+
+# ── /check/ris ─────────────────────────────────────────────────────────────────
+
+
+@api_v1.post(
+    "/check/ris",
+    response_model=BibCheckResponse,
+    tags=["lookup"],
+    summary="Check a RIS file for retractions",
+)
+@limiter.limit(_RATE_LIMIT)
+async def check_ris(
+    request: Request,
+    file: UploadFile = File(...),  # noqa: B008
+) -> BibCheckResponse:
+    """Upload a ``.ris`` file; returns which entries appear in Retraction Watch."""
+    from rwcheck.ris import parse_ris_file
+
+    _require_db()
+    if not (file.filename or "").lower().endswith(".ris"):
+        raise HTTPException(status_code=422, detail="Please upload a .ris file.")
+    content = await file.read()
+    with tempfile.NamedTemporaryFile(suffix=".ris", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+    try:
+        entries = parse_ris_file(tmp_path)
     finally:
         tmp_path.unlink(missing_ok=True)
 
