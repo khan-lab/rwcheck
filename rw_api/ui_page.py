@@ -336,6 +336,9 @@ async def index() -> None:
         ui.link("API", "/docs", new_tab=True).classes(
             "text-[#2c3e50] font-semibold no-underline hover:underline"
         )
+        ui.link("reDoc", "/redoc", new_tab=True).classes(
+            "text-[#2c3e50] font-semibold no-underline hover:underline"
+        )
         ui.link("CLI", "https://khan-lab.github.io/rwcheck", new_tab=True).classes(
             "text-[#2c3e50] font-semibold no-underline hover:underline"
         )
