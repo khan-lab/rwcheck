@@ -2,7 +2,7 @@
 
 This guide walks through hosting `https://rwcheck.khanlab.bio` on an AWS EC2 instance using Docker Compose and Caddy (automatic TLS via Let's Encrypt).
 
----
+
 
 ## Prerequisites
 
@@ -11,7 +11,6 @@ This guide walks through hosting `https://rwcheck.khanlab.bio` on an AWS EC2 ins
 - A domain you control — `rwcheck.khanlab.bio` — with DNS managed in Route 53 (or any DNS provider)
 - Ports **80** and **443** open in the EC2 security group
 
----
 
 ## 1. Open ports in the EC2 security group
 
@@ -24,7 +23,6 @@ In the AWS Console → EC2 → Security Groups, add two inbound rules to the ins
 
 SSH (port 22) should already be open.
 
----
 
 ## 2. Point DNS to the EC2 instance
 
@@ -42,7 +40,6 @@ dig +short rwcheck.khanlab.bio
 
 > **Note:** Let's Encrypt will fail if DNS has not propagated before you run `compose-up`. Verify DNS resolves first.
 
----
 
 ## 3. Install Docker on the EC2 instance
 
@@ -82,7 +79,6 @@ docker --version
 docker compose version
 ```
 
----
 
 ## 4. Clone the repository
 
@@ -112,7 +108,7 @@ PUBLIC_HOST=https://rwcheck.khanlab.bio
 
 `.env` is gitignored and must **never be committed**.
 
----
+
 
 ## 6. Build and start
 
@@ -143,7 +139,7 @@ caddy   | ... certificate obtained successfully
 rwcheck | INFO:     Application startup complete.
 ```
 
----
+
 
 ## 7. Verify the deployment
 
@@ -161,7 +157,7 @@ curl "https://rwcheck.khanlab.bio/check/doi/10.1038%2Fnature12345"
 
 The browser UI is at `https://rwcheck.khanlab.bio` and the OpenAPI (Swagger) docs are at `https://rwcheck.khanlab.bio/docs`.
 
----
+
 
 ## 8. Keeping the service running across reboots
 
@@ -179,7 +175,7 @@ sudo reboot
 docker compose -f ~/rwcheck/docker-compose.yml ps
 ```
 
----
+
 
 ## Maintenance
 
@@ -219,7 +215,7 @@ docker compose down -v     # stops containers AND deletes data volumes (destruct
 
 Caddy renews Let's Encrypt certificates automatically before expiry. Certificates are stored in the `caddy_data` Docker volume and persist across restarts. No manual intervention is required.
 
----
+
 
 ## Troubleshooting
 

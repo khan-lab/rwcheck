@@ -20,14 +20,4 @@ authors:
     given-names: Aziz
     orcid: "https://orcid.org/0000-0002-6327-3348"
     affiliation: "Mohamed bin Zayed University of Artificial Intelligence (MBZUAI), Abu Dhabi, UAE"
-preferred-citation:
-  type: article
-  title: "RWCheck: A fast, offline tool for screening references against the Retraction Watch database"
-  authors:
-    - family-names: Khan
-      given-names: Aziz
-      orcid: "https://orcid.org/0000-0002-6327-3348"
-      affiliation: "Mohamed bin Zayed University of Artificial Intelligence (MBZUAI), Abu Dhabi, UAE"
-  journal: "Journal of Open Source Software"
-  year: 2026
-  url: "https://joss.theoj.org"
+  
